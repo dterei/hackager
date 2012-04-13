@@ -28,6 +28,7 @@ catchIO = catch
 ignoreException :: IO () -> IO ()
 ignoreException io = io `catchIO` \_ -> return ()
 
+-- | Show output in a tabular format.
 showTable :: [Int -> String -> String] -> [[String]] -> [String]
 showTable padders xss =
     let lengths = map (maximum . map length) $ transpose xss

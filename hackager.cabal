@@ -1,16 +1,20 @@
-name:               hackage-test
+Name:               Hackager
 Version:            0.2
-Synopsis:           Hackage Test
+Synopsis:           Hackage testing tool
 Description:
-    Hackage test is a program for compiling the entirety of Hackage as a way of
+    Hackager is a program for compiling the entirety of Hackage as a way of
     testing a Haskell compiler.
+Author:             The GHC Team 
+Maintainer:         David Terei <dave.terei@gmail.com>
 License:            BSD3
 License-File:       LICENSE
 Build-type:         Simple
+Stability:          Stable
+Extra-Source-Files: README.md
 Cabal-Version:      >= 1.6
 
-Executable HackageTest
-    Main-Is: HackageTest.hs
+Executable Hackager
+    Main-Is: Hackager.hs
     HS-Source-Dirs: src
     Ghc-Options: -threaded -Wall -Werror
     Build-Depends: base        >= 2 && < 5,
@@ -21,8 +25,8 @@ Executable HackageTest
                    mtl,
                    process
 
-Executable hackage-test-compare
-    Main-Is: hackage-test-compare.hs
+Executable HackagerReport
+    Main-Is: HackagerReport.hs
     HS-Source-Dirs: src
     Ghc-Options: -threaded -Wall -Werror
     Build-Depends: base        >= 2 && < 5,

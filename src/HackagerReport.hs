@@ -1,4 +1,4 @@
-
+-- | Reporting tool. Perform a comparision of two Hackage Test runs.
 module Main (main) where
 
 import Utils

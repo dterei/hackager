@@ -1,4 +1,4 @@
--- | Hackage Test.
+-- | Hackage Test. Build all of hackage.
 module Main (main) where
 
 import BuildManager

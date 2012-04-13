@@ -1,6 +1,20 @@
 -- | Monad for Hackage Test. Just a simple state passing monad with appropriate
 -- getter and setters.
-module HackageMonad where
+module HackageMonad (
+        PkgName, Hkg, HkgState, startState,
+
+        setName, getName, getCommonPackageConf, getTempPackageConf,
+        getCommonPrefix, getScratchDir, getCabalInstall, setCabalInstall,
+        getGhc, setGhc, getGhcPkg, setGhcPkg, getDepFlags, setDepFlags,
+        getPkgFlags, setPkgFlags,
+
+        addInstall, addInstalledPackage, addInstallablePackage,
+        addNotInstallablePackage, addFailPackage,
+        getInstallablePackages, getCommonDepInstallablePackages,
+        buildSucceeded, buildFailed, buildDepsFailed,
+
+        dumpStats, dumpResults
+    ) where
 
 import Utils
 
