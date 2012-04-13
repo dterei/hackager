@@ -109,7 +109,8 @@ getDir :: Hkg FilePath
 getDir = get >>= \st -> return $ st_dir st
 
 getTempPackageConf :: PkgName -> Hkg FilePath
-getTempPackageConf p = getDir >>= \dir -> return $ dir </> p </> "temp.package.conf"
+getTempPackageConf p = getDir >>= \dir -> return
+    $ dir </> "temp-pkg" </> p </> "temp.package.conf"
 
 getScratchDir :: PkgName -> Hkg FilePath
 getScratchDir p = getDir >>= \dir -> return $ dir </> "scratch" </> p

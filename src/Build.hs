@@ -65,6 +65,11 @@ buildPkg npkgs i p = do
 
         _ -> buildDepsFailed p
 
+    -- clean up
+    liftIO . ignoreException $ removeDirectoryRecursive scratchDir
+    liftIO . ignoreException $ removeFile tmpPackageConf
+    liftIO . ignoreException $ removeDirectoryRecursive tmpPackageConf
+
 -- | Find out what would happen if we installed the package. Running
 -- cabal-install in dry-run mode may tell us:
 -- * The package is uninstallable
