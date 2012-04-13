@@ -8,18 +8,17 @@ module BuildTools (
         StdLine(..)
     ) where
 
-import HackageMonad
-import Utils
-
+import Control.Concurrent
 import Control.Monad.State
+import Control.Exception
 import System.Directory
 import System.Exit
 import System.FilePath
+import System.IO
 import System.Process
 
-import Control.Concurrent
-import Control.Exception
-import System.IO
+import HackageMonad
+import Utils
 
 -- | Setup the needed directory structure
 setupDir:: String -> Hkg ()

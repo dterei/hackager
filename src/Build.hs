@@ -4,10 +4,6 @@ module Build (
         statPkg
     ) where
 
-import BuildTools
-import HackageMonad
-import Utils
-
 import Control.Monad.State
 import Data.List
 import Distribution.Package
@@ -16,15 +12,19 @@ import System.Directory
 import System.Exit
 import System.FilePath
 
+import BuildTools
+import HackageMonad
+import Utils
+
 -- | Build a single package.
 buildPkg :: Int -> PkgName -> Int -> Hkg ()
 buildPkg npkgs p i = do
     info $ "===> " ++ p ++ " (" ++ show i ++ " of " ++ show npkgs ++ ")"
 
-    tmpPackageConf <- getTempPackageConf
+    tmpPackageConf <- getTempPackageConf p
     initialisePackageConf tmpPackageConf
 
-    scratchDir <- getScratchDir
+    scratchDir <- getScratchDir p
     liftIO . ignoreException $ removeDirectoryRecursive scratchDir
 
     name         <- getName

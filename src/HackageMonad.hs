@@ -4,20 +4,20 @@ module HackageMonad (
         PkgName, Hkg, HkgState, startState,
 
         setName, getName, getTempPackageConf,
-        getCommonPrefix, getScratchDir, getCabalInstall, setCabalInstall,
+        getScratchDir, getCabalInstall, setCabalInstall,
         getGhc, setGhc, getGhcPkg, setGhcPkg, getDepFlags, setDepFlags,
         getPkgFlags, setPkgFlags,
 
         addInstall, addInstalledPackage, addInstallablePackage,
         addNotInstallablePackage, addFailPackage,
-        getInstallablePackages, getCommonDepInstallablePackages,
+        getInstallablePackages,
         buildSucceeded, buildFailed, buildDepsFailed,
 
         dumpStats, dumpResults
     ) where
 
-import Utils
-
+import Control.Concurrent (MVar, newMVar)
+import qualified Control.Concurrent as C
 import Control.Monad.State
 import Data.Function
 import Data.List
@@ -25,16 +25,16 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
-import Prelude hiding (catch)
 import System.Directory
 import System.FilePath
+
+import Utils
 
 type PkgName = String
 
 type Hkg = StateT HkgState IO
 
--- We're a bit sloppy with this type. Different fields only get good
--- values at different phases.
+-- | The state of Hackager
 data HkgState = HkgState {
         -- These are set based on the command line flags
         st_name         :: FilePath,
@@ -46,20 +46,29 @@ data HkgState = HkgState {
         st_pkgFlags     :: [String],
 
         -- These are set by the stats-collection pass:
-        st_installedPackages      :: Set PkgName,
-        st_installablePackages    :: Set PkgName,
-        st_notInstallablePackages :: Set PkgName,
-        st_failPackages           :: Set PkgName,
-        st_installCounts          :: Map PkgName Int,
+        st_installedPackages      :: MVar (Set PkgName),
+        st_installablePackages    :: MVar (Set PkgName),
+        st_notInstallablePackages :: MVar (Set PkgName),
+        st_failPackages           :: MVar (Set PkgName),
+        st_installCounts          :: MVar (Map PkgName Int),
 
         -- These are set by the installation pass:
-        st_buildablePackages       :: Set PkgName,
-        st_buildFailurePackages    :: Set PkgName,
-        st_buildDepFailurePackages :: Set PkgName
+        st_buildablePackages       :: MVar (Set PkgName),
+        st_buildFailurePackages    :: MVar (Set PkgName),
+        st_buildDepFailurePackages :: MVar (Set PkgName)
     }
 
-startState :: HkgState
-startState = HkgState {
+startState :: IO HkgState
+startState = do
+    ipkgs <- newMVar Set.empty
+    apkgs <- newMVar Set.empty
+    npkgs <- newMVar Set.empty
+    fpkgs <- newMVar Set.empty
+    count <- newMVar Map.empty
+    bbpkgs <- newMVar Set.empty
+    bfpkgs <- newMVar Set.empty
+    bdpkgs <- newMVar Set.empty
+    return $ HkgState {
         st_name                    = "",
         st_dir                     = "",
         st_cabalInstall            = "",
@@ -67,14 +76,14 @@ startState = HkgState {
         st_ghcPkg                  = "",
         st_depFlags                = [],
         st_pkgFlags                = [],
-        st_installedPackages       = Set.empty,
-        st_installablePackages     = Set.empty,
-        st_notInstallablePackages  = Set.empty,
-        st_failPackages            = Set.empty,
-        st_installCounts           = Map.empty,
-        st_buildablePackages       = Set.empty,
-        st_buildFailurePackages    = Set.empty,
-        st_buildDepFailurePackages = Set.empty
+        st_installedPackages       = ipkgs,
+        st_installablePackages     = apkgs,
+        st_notInstallablePackages  = npkgs,
+        st_failPackages            = fpkgs,
+        st_installCounts           = count,
+        st_buildablePackages       = bbpkgs,
+        st_buildFailurePackages    = bfpkgs,
+        st_buildDepFailurePackages = bdpkgs
     }
 
 ------------------------------------------------
@@ -92,14 +101,11 @@ getName = get >>= \st -> return $ st_name st
 getDir :: Hkg FilePath
 getDir = get >>= \st -> return $ st_dir st
 
-getCommonPrefix :: Hkg FilePath
-getCommonPrefix = getDir >>= \dir -> return $ dir </> "commonPrefix"
+getTempPackageConf :: PkgName -> Hkg FilePath
+getTempPackageConf p = getDir >>= \dir -> return $ dir </> p </> "temp.package.conf"
 
-getTempPackageConf :: Hkg FilePath
-getTempPackageConf = getDir >>= \dir -> return $ dir </> "temp.package.conf"
-
-getScratchDir :: Hkg FilePath
-getScratchDir = getDir >>= \dir -> return $ dir </> "scratch"
+getScratchDir :: PkgName -> Hkg FilePath
+getScratchDir p = getDir >>= \dir -> return $ dir </> "scratch" </> p
 
 setCabalInstall :: FilePath -> Hkg ()
 setCabalInstall ci = get >>= \st -> put $ st { st_cabalInstall = ci }
@@ -140,83 +146,78 @@ parseFlags str =
 addInstall :: PkgName -> Hkg ()
 addInstall pn = do
     st <- get
-    let ics = Map.insertWith (+) pn 1 $ st_installCounts st
-    put $ st { st_installCounts = ics }
+    ics <- takeMVar $ st_installCounts st
+    let ics' = Map.insertWith (+) pn 1 ics
+    putMVar (st_installCounts st) ics'
 
 addInstalledPackage :: PkgName -> Hkg ()
 addInstalledPackage pkg = do
     st <- get
-    let s = st_installedPackages st
-    put $ st { st_installedPackages = Set.insert pkg s }
+    s  <- takeMVar $ st_installedPackages st
+    putMVar (st_installedPackages st) $ Set.insert pkg s
 
 addInstallablePackage :: PkgName -> Hkg ()
 addInstallablePackage pkg = do
     st <- get
-    let s = st_installablePackages st
-    put $ st { st_installablePackages = Set.insert pkg s }
+    s <- takeMVar $ st_installablePackages st
+    putMVar (st_installablePackages st) $ Set.insert pkg s
 
 getInstallablePackages :: Hkg [PkgName]
 getInstallablePackages = do
     st <- get
-    return $ Set.toList $ st_installablePackages st
-
-getCommonDepInstallablePackages :: Hkg [PkgName]
-getCommonDepInstallablePackages = do
-    st <- get
-    let isInstallable p = p `Set.member` st_installablePackages st
-        commonDeps = Map.keys $ Map.filter (> 50) $ st_installCounts st
-        commonDepsInstallable = filter isInstallable commonDeps
-    return commonDepsInstallable
+    s <- takeMVar $ st_installablePackages st
+    return $ Set.toList s
 
 addNotInstallablePackage :: PkgName -> Hkg ()
 addNotInstallablePackage pkg = do
     st <- get
-    let s = st_notInstallablePackages st
-    put $ st { st_notInstallablePackages = Set.insert pkg s }
+    s <- takeMVar $ st_notInstallablePackages st
+    putMVar (st_notInstallablePackages st) $ Set.insert pkg s 
 
 addFailPackage :: PkgName -> Hkg ()
 addFailPackage pkg = do
     st <- get
-    let s = st_failPackages st
-    put $ st { st_failPackages = Set.insert pkg s }
+    s <- takeMVar $ st_failPackages st
+    putMVar (st_failPackages st) $ Set.insert pkg s
 
 buildSucceeded :: PkgName -> Hkg ()
 buildSucceeded pkg = do
     st <- get
-    let s = st_buildablePackages st
-    put $ st { st_buildablePackages = Set.insert pkg s }
+    s <- takeMVar $ st_buildablePackages st
+    putMVar (st_buildablePackages st) $ Set.insert pkg s
 
 buildFailed :: PkgName -> Hkg ()
 buildFailed pkg = do
     st <- get
-    let s = st_buildFailurePackages st
-    put $ st { st_buildFailurePackages = Set.insert pkg s }
+    s <- takeMVar $ st_buildFailurePackages st
+    putMVar (st_buildFailurePackages st) $ Set.insert pkg s
 
 buildDepsFailed :: PkgName -> Hkg ()
 buildDepsFailed pkg = do
     st <- get
-    let s = st_buildDepFailurePackages st
-    put $ st { st_buildDepFailurePackages = Set.insert pkg s }
+    s <- takeMVar $ st_buildDepFailurePackages st
+    putMVar (st_buildDepFailurePackages st) $ Set.insert pkg s
 
 dumpStats :: Int -> Hkg ()
-dumpStats npkgs = do
+dumpStats n = do
     st <- get
+    ipkgs <- takeMVar $ st_installedPackages st
+    apkgs <- takeMVar $ st_installablePackages st
+    npkgs <- takeMVar $ st_notInstallablePackages st
+    fpkgs <- takeMVar $ st_failPackages st
+    count <- takeMVar $ st_installCounts st
+
     let fullHistogram = reverse $ sort $ map swap
-                      $ Map.assocs $ st_installCounts st
+                      $ Map.assocs count
         (manyHistogram, fewHistogram) = span ((>= 10) . fst) fullHistogram
         total = sum $ map fst fullHistogram
-        summaryTable = [["Num packages",
-                         show $ npkgs],
-                        ["Installed packages",
-                         show $ Set.size $ st_installedPackages st],
-                        ["Installable packages",
-                         show $ Set.size $ st_installablePackages st],
-                        ["Not installable packages",
-                         show $ Set.size $ st_notInstallablePackages st],
-                        ["Failed packages",
-                         show $ Set.size $ st_failPackages st],
-                        ["Total reinstallations",
-                         show total]]
+        summaryTable = [ ["Num packages"           , show $ n]              
+                       , ["Installed packages"     , show $ Set.size ipkgs]
+                       , ["Installable packages"   , show $ Set.size apkgs]
+                       , ["Uninstallable packages" , show $ Set.size npkgs]
+                       , ["Failed packages"        , show $ Set.size fpkgs]
+                       , ["Total reinstallations"  , show total]
+                       ]
 
     name <- getName
     liftIO $ do
@@ -229,15 +230,15 @@ dumpStats npkgs = do
         writeFile (name </> "stats.summary")
                   (unlines $ showTable [rpad, rpad] summaryTable)
         writeFile (name </> "installed-packages")
-                  (unlines $ Set.toList $ st_installedPackages st)
+                  (unlines $ Set.toList ipkgs)
         writeFile (name </> "installable-packages")
-                  (unlines $ Set.toList $ st_installablePackages st)
+                  (unlines $ Set.toList apkgs)
         writeFile (name </> "uninstallable-packages")
-                  (unlines $ Set.toList $ st_notInstallablePackages st)
+                  (unlines $ Set.toList npkgs)
         writeFile (name </> "fail-packages")
-                  (unlines $ Set.toList $ st_failPackages st)
+                  (unlines $ Set.toList fpkgs)
         writeFile (name </> "install-counts")
-                  (unlines $ map show $ Map.assocs $ st_installCounts st)
+                  (unlines $ map show $ Map.assocs count)
 
   where
     showCompleteHistogram hist = showTable [rpad, rpad]
@@ -256,10 +257,20 @@ dumpStats npkgs = do
 dumpResults :: Hkg ()
 dumpResults = do
     st <- get
+    bpkgs <- takeMVar $ st_buildablePackages st
+    fpkgs <- takeMVar $ st_buildFailurePackages st
+    dpkgs <- takeMVar $ st_buildDepFailurePackages st
+
     liftIO $ writeFile (st_name st </> "buildable")
-                       (unlines $ Set.toList $ st_buildablePackages st)
+                       (unlines $ Set.toList bpkgs)
     liftIO $ writeFile (st_name st </> "buildFailed")
-                       (unlines $ Set.toList $ st_buildFailurePackages st)
+                       (unlines $ Set.toList fpkgs)
     liftIO $ writeFile (st_name st </> "buildDepsFailed")
-                       (unlines $ Set.toList $ st_buildDepFailurePackages st)
+                       (unlines $ Set.toList dpkgs)
+
+takeMVar :: MVar a -> Hkg a
+takeMVar m = liftIO $ C.takeMVar m
+
+putMVar :: MVar a -> a -> Hkg ()
+putMVar m v = liftIO $ C.putMVar m v
 

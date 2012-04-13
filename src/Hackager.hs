@@ -1,20 +1,20 @@
 -- | Hackage Test. Build all of hackage.
 module Main (main) where
 
-import BuildManager
-import BuildTools
-import HackageMonad
-
 import Control.Monad.State
-import Data.List
-import Prelude hiding (catch)
 import System.Environment
 import System.Exit
 import System.IO
 
+import BuildManager
+import BuildTools
+import HackageMonad
+
 -- | Hackage Test (IO)
 main :: IO ()
-main = evalStateT main' startState
+main = do
+    st <- startState
+    evalStateT main' st
 
 -- | Hackage Test (Monad)
 main' :: Hkg ()

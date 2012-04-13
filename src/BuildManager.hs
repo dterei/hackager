@@ -4,14 +4,12 @@ module BuildManager (
         tryBuildingPackages
     ) where
 
+import Control.Monad.State
+
 import Build
 import BuildTools
 import HackageMonad
 import Utils
-
-import Control.Monad.State
-import Data.List
-import Prelude hiding (catch)
 
 -- | Get a list of all packages on hackage.
 getPackages :: Hkg [PkgName]
