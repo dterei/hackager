@@ -1,21 +1,19 @@
-Name:               hackage-test
-Version:            0.1
-Synopsis:           Hackage test
+name:               hackage-test
+Version:            0.2
+Synopsis:           Hackage Test
 Description:
-    Hackage test.
+    Hackage test is a program for compiling the entirety of Hackage as a way of
+    testing a Haskell compiler.
 License:            BSD3
 License-File:       LICENSE
 Build-type:         Simple
 Cabal-Version:      >= 1.6
 
-Executable hackage-test
-    Main-Is: hackage-test.hs
-    ghc-options: -threaded
-    ghc-options: -Wall
-    if impl(ghc >= 6.8)
-      ghc-options: -fwarn-tabs
-
-    build-depends: base     >= 2        && < 5,
+Executable HackageTest
+    Main-Is: HackageTest.hs
+    HS-Source-Dirs: src
+    Ghc-Options: -threaded -Wall -Werror
+    Build-Depends: base        >= 2 && < 5,
                    Cabal,
                    containers,
                    directory,
@@ -25,12 +23,9 @@ Executable hackage-test
 
 Executable hackage-test-compare
     Main-Is: hackage-test-compare.hs
-    ghc-options: -threaded
-    ghc-options: -Wall
-    if impl(ghc >= 6.8)
-      ghc-options: -fwarn-tabs
-
-    build-depends: base     >= 2        && < 5,
+    HS-Source-Dirs: src
+    Ghc-Options: -threaded -Wall -Werror
+    Build-Depends: base        >= 2 && < 5,
                    containers,
                    filepath
 
