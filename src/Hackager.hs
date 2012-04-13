@@ -22,7 +22,7 @@ main' = do
     liftIO $ hSetBuffering stdout NoBuffering
     args <- liftIO getArgs
     case args of
-       name : cabalInstall : ghc : ghcPkg : depFlags : pkgFlags : ps -> do
+       name : cabalInstall : ghc : ghcPkg : depFlags : pkgFlags : threads : ps -> do
            setupDir name
            setName name
            setCabalInstall cabalInstall
@@ -33,7 +33,7 @@ main' = do
            ps' <- case ps of
                    [] -> getPackages
                    _  -> return ps
-           tryBuildingPackages ps'
+           tryBuildingPackages (read threads) ps'
 
        ["help"  ] -> liftIO $ usageInfo ExitSuccess
        ["--help"] -> liftIO $ usageInfo ExitSuccess
@@ -44,7 +44,7 @@ usageInfo :: ExitCode -> IO ()
 usageInfo exitCode = do
     p <- getProgName
     mapM_ putStrLn [
-        "Usage: " ++ p ++ " name cabalInstall ghc ghcPkg depFlags pkgFlags [pkgs]",
+        "Usage: " ++ p ++ " name cabalInstall ghc ghcPkg depFlags pkgFlags nthreads [pkgs]",
         "    name:         A name by which the results of this hackage test run will",
         "                  by referred, e.g. \"ghc-6.12.1\".",
         "    cabalInstall: The path to the cabal-install program to use.",
@@ -54,6 +54,7 @@ usageInfo exitCode = do
         "                  we are interested in, e.g. \"\" or \"-XFoo -XBar\".",
         "    pkgFlags:     The flags to use when compiling a package we are interested",
         "                  in, e.g. \"\" or \"-XFoo -XBar\".",
+        "    nthreads:     Number of threads to use to run in parallel.",
         "    pkgs:         An optional list of packages to build. If not specified, all",
         "                  of hackage is built. "
         ]

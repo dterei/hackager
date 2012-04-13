@@ -17,8 +17,8 @@ import HackageMonad
 import Utils
 
 -- | Build a single package.
-buildPkg :: Int -> PkgName -> Int -> Hkg ()
-buildPkg npkgs p i = do
+buildPkg :: Int -> Int -> PkgName -> Hkg ()
+buildPkg npkgs i p = do
     info $ "===> " ++ p ++ " (" ++ show i ++ " of " ++ show npkgs ++ ")"
 
     tmpPackageConf <- getTempPackageConf p
@@ -74,7 +74,7 @@ buildPkg npkgs p i = do
 -- * Something we don't understand
 statPkg :: Int -> PkgName -> Int -> Hkg ()
 statPkg npkgs pkg i = do
-    info $ "\r" ++ show i ++ " of " ++ show npkgs
+    info $ "===> Stat: " ++ pkg ++ " (" ++ show i ++ " of " ++ show npkgs ++ ")"
     name <- getName
     basicFlags <- getBasicCabalInstallFlags
     fs   <- getPkgFlags

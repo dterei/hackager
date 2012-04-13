@@ -4,6 +4,8 @@ module BuildManager (
         tryBuildingPackages
     ) where
 
+import Control.Concurrent
+import Control.Monad
 import Control.Monad.State
 
 import Build
@@ -28,8 +30,8 @@ getPackages = do
 
 -- | Loop over given packages and try to build each of them, recording the
 -- results.
-tryBuildingPackages :: [PkgName] -> Hkg ()
-tryBuildingPackages ps = do
+tryBuildingPackages :: Int -> [PkgName] -> Hkg ()
+tryBuildingPackages nthreads ps = do
     -- Our main objective here is to find out how many times each package would
     -- be installed as a dependency of another package.
     zipWithM_ (statPkg $ length ps) ps [1..]
@@ -37,7 +39,23 @@ tryBuildingPackages ps = do
     info ""
     -- Write out the data so we can look at it (by hand) later if we want.
     dumpStats (length ps)
-    psAll <- getInstallablePackages
-    zipWithM_ (buildPkg $ length psAll) psAll [1..]
+    psAll    <- getInstallablePackages
+    mpsAll   <- liftIO . newMVar $ zip [1..] psAll
+    children <- replicateM nthreads (forkChild $ builder (length psAll) mpsAll)
+    waitForChildren children
     dumpResults
+
+-- | Function to go through a package list and build them. Thread safe so can
+-- be forked as child processes.
+builder :: Int -> MVar [(Int, PkgName)] -> Hkg ()
+builder n mpkgs = go
+  where
+    go = do
+        pkgs <- liftIO $ takeMVar mpkgs
+        case pkgs of
+            []            -> liftIO (putMVar mpkgs []) >> return ()
+            ((i, p) : ps) -> do
+                liftIO $ putMVar mpkgs ps
+                buildPkg n i p
+                go
 

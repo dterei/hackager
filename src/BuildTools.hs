@@ -1,5 +1,6 @@
 -- | Various tools and utility functions to do wtih building.
 module BuildTools (
+        Child, forkChild, waitForChildren,
         setupDir,
         runCabal, runCabalResults, runCabalStdout,
         runGhcPkg,
@@ -19,6 +20,24 @@ import System.Process
 
 import HackageMonad
 import Utils
+
+-- | Children process signal
+type Child = MVar ()
+
+-- | Fork a child and return an MVar that singals when the child is done.
+forkChild :: Hkg () -> Hkg Child
+forkChild hkg = do
+    mvar <- liftIO $ newEmptyMVar
+    st <- get
+    _ <- liftIO $ forkIO (evalStateT hkg st `finally` putMVar mvar ())
+    return mvar
+
+-- | Wait on a list of children to finish processing
+waitForChildren :: [Child] -> Hkg ()
+waitForChildren []                 = return ()
+waitForChildren (child : children) = do
+    liftIO $ takeMVar child
+    waitForChildren children
 
 -- | Setup the needed directory structure
 setupDir:: String -> Hkg ()
@@ -71,15 +90,19 @@ initialisePackageConf fp = do
 
 -- | Print message to stdout.
 info :: String -> Hkg ()
-info msg = liftIO $ putStrLn msg
+info msg = getIOLock >> liftIO (putStrLn msg) >> releaseIOLock
 
 -- | Print message to stderr.
 warn :: String -> Hkg ()
-warn msg = liftIO $ hPutStrLn stderr msg
+warn msg = getIOLock >> liftIO (hPutStrLn stderr msg) >> releaseIOLock
 
 -- | Exit with error message.
 die :: String -> Hkg a
-die err = liftIO $ hPutStrLn stderr err >> exitWith (ExitFailure 1)
+die err = do
+    getIOLock
+    liftIO $ hPutStrLn stderr err
+    releaseIOLock
+    liftIO $ exitWith (ExitFailure 1)
 
 -- | Command output representation
 data StdLine = Stdout String

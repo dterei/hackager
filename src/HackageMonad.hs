@@ -13,6 +13,8 @@ module HackageMonad (
         getInstallablePackages,
         buildSucceeded, buildFailed, buildDepsFailed,
 
+        getIOLock, releaseIOLock,
+
         dumpStats, dumpResults
     ) where
 
@@ -55,7 +57,10 @@ data HkgState = HkgState {
         -- These are set by the installation pass:
         st_buildablePackages       :: MVar (Set PkgName),
         st_buildFailurePackages    :: MVar (Set PkgName),
-        st_buildDepFailurePackages :: MVar (Set PkgName)
+        st_buildDepFailurePackages :: MVar (Set PkgName),
+
+        -- internal locks for making stdout thread safe
+        st_iolock :: MVar ()
     }
 
 startState :: IO HkgState
@@ -68,6 +73,7 @@ startState = do
     bbpkgs <- newMVar Set.empty
     bfpkgs <- newMVar Set.empty
     bdpkgs <- newMVar Set.empty
+    iolock <- newMVar ()
     return $ HkgState {
         st_name                    = "",
         st_dir                     = "",
@@ -83,7 +89,8 @@ startState = do
         st_installCounts           = count,
         st_buildablePackages       = bbpkgs,
         st_buildFailurePackages    = bfpkgs,
-        st_buildDepFailurePackages = bdpkgs
+        st_buildDepFailurePackages = bdpkgs,
+        st_iolock                  = iolock
     }
 
 ------------------------------------------------
@@ -198,14 +205,25 @@ buildDepsFailed pkg = do
     s <- takeMVar $ st_buildDepFailurePackages st
     putMVar (st_buildDepFailurePackages st) $ Set.insert pkg s
 
+getIOLock :: Hkg ()
+getIOLock = do
+    st <- get
+    _ <- takeMVar $ st_iolock st
+    return ()
+
+releaseIOLock :: Hkg ()
+releaseIOLock = do
+    st <- get
+    putMVar (st_iolock st) ()
+
 dumpStats :: Int -> Hkg ()
 dumpStats n = do
     st <- get
-    ipkgs <- takeMVar $ st_installedPackages st
-    apkgs <- takeMVar $ st_installablePackages st
-    npkgs <- takeMVar $ st_notInstallablePackages st
-    fpkgs <- takeMVar $ st_failPackages st
-    count <- takeMVar $ st_installCounts st
+    ipkgs <- readMVar $ st_installedPackages st
+    apkgs <- readMVar $ st_installablePackages st
+    npkgs <- readMVar $ st_notInstallablePackages st
+    fpkgs <- readMVar $ st_failPackages st
+    count <- readMVar $ st_installCounts st
 
     let fullHistogram = reverse $ sort $ map swap
                       $ Map.assocs count
@@ -257,9 +275,9 @@ dumpStats n = do
 dumpResults :: Hkg ()
 dumpResults = do
     st <- get
-    bpkgs <- takeMVar $ st_buildablePackages st
-    fpkgs <- takeMVar $ st_buildFailurePackages st
-    dpkgs <- takeMVar $ st_buildDepFailurePackages st
+    bpkgs <- readMVar $ st_buildablePackages st
+    fpkgs <- readMVar $ st_buildFailurePackages st
+    dpkgs <- readMVar $ st_buildDepFailurePackages st
 
     liftIO $ writeFile (st_name st </> "buildable")
                        (unlines $ Set.toList bpkgs)
@@ -273,4 +291,7 @@ takeMVar m = liftIO $ C.takeMVar m
 
 putMVar :: MVar a -> a -> Hkg ()
 putMVar m v = liftIO $ C.putMVar m v
+
+readMVar :: MVar a -> Hkg a
+readMVar m = liftIO $ C.readMVar m
 
