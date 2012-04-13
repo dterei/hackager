@@ -3,7 +3,7 @@
 module HackageMonad (
         PkgName, Hkg, HkgState, startState,
 
-        setName, getName, getCommonPackageConf, getTempPackageConf,
+        setName, getName, getTempPackageConf,
         getCommonPrefix, getScratchDir, getCabalInstall, setCabalInstall,
         getGhc, setGhc, getGhcPkg, setGhcPkg, getDepFlags, setDepFlags,
         getPkgFlags, setPkgFlags,
@@ -37,41 +37,43 @@ type Hkg = StateT HkgState IO
 -- values at different phases.
 data HkgState = HkgState {
         -- These are set based on the command line flags
-        st_name :: FilePath,
-        st_dir :: FilePath,
+        st_name         :: FilePath,
+        st_dir          :: FilePath,
         st_cabalInstall :: FilePath,
-        st_ghc :: FilePath,
-        st_ghcPkg :: FilePath,
-        st_depFlags :: [String],
-        st_pkgFlags :: [String],
+        st_ghc          :: FilePath,
+        st_ghcPkg       :: FilePath,
+        st_depFlags     :: [String],
+        st_pkgFlags     :: [String],
+
         -- These are set by the stats-collection pass:
-        st_installedPackages :: Set PkgName,
-        st_installablePackages :: Set PkgName,
+        st_installedPackages      :: Set PkgName,
+        st_installablePackages    :: Set PkgName,
         st_notInstallablePackages :: Set PkgName,
-        st_failPackages :: Set PkgName,
-        st_installCounts :: Map PkgName Int,
+        st_failPackages           :: Set PkgName,
+        st_installCounts          :: Map PkgName Int,
+
         -- These are set by the installation pass:
-        st_buildablePackages :: Set PkgName,
-        st_buildFailurePackages :: Set PkgName,
+        st_buildablePackages       :: Set PkgName,
+        st_buildFailurePackages    :: Set PkgName,
         st_buildDepFailurePackages :: Set PkgName
     }
 
 startState :: HkgState
 startState = HkgState {
-        st_name = "",
-        st_dir = "",
-        st_cabalInstall = "",
-        st_ghc = "",
-        st_ghcPkg = "",
-        st_depFlags = [],
-        st_pkgFlags = [],
-        st_installedPackages = Set.empty,
-        st_installablePackages = Set.empty,
-        st_notInstallablePackages = Set.empty,
-        st_failPackages = Set.empty,
-        st_installCounts = Map.empty,
-        st_buildablePackages = Set.empty,
-        st_buildFailurePackages = Set.empty,
+        st_name                    = "",
+        st_dir                     = "",
+        st_cabalInstall            = "",
+        st_ghc                     = "",
+        st_ghcPkg                  = "",
+        st_depFlags                = [],
+        st_pkgFlags                = [],
+        st_installedPackages       = Set.empty,
+        st_installablePackages     = Set.empty,
+        st_notInstallablePackages  = Set.empty,
+        st_failPackages            = Set.empty,
+        st_installCounts           = Map.empty,
+        st_buildablePackages       = Set.empty,
+        st_buildFailurePackages    = Set.empty,
         st_buildDepFailurePackages = Set.empty
     }
 
@@ -89,9 +91,6 @@ getName = get >>= \st -> return $ st_name st
 
 getDir :: Hkg FilePath
 getDir = get >>= \st -> return $ st_dir st
-
-getCommonPackageConf :: Hkg FilePath
-getCommonPackageConf = getDir >>= \dir -> return $ dir </> "common.package.conf"
 
 getCommonPrefix :: Hkg FilePath
 getCommonPrefix = getDir >>= \dir -> return $ dir </> "commonPrefix"

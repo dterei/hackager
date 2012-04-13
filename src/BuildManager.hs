@@ -13,16 +13,6 @@ import Control.Monad.State
 import Data.List
 import Prelude hiding (catch)
 
--- The build is faster if we only build common dependencies once, but currently
--- the code assumes that all of them will install. As this isn't the case, turn
--- it off.
-buildCommonPackagesOnce :: Bool
-buildCommonPackagesOnce = False
-
--- | Should we only collect basic package statistics and not acutally build.
-statsOnly :: Bool
-statsOnly = False
-
 -- | Get a list of all packages on hackage.
 getPackages :: Hkg [PkgName]
 getPackages = do
@@ -49,24 +39,7 @@ tryBuildingPackages ps = do
     info ""
     -- Write out the data so we can look at it (by hand) later if we want.
     dumpStats (length ps)
-    unless statsOnly $ do
-        commonPackageConf <- getCommonPackageConf
-        initialisePackageConf commonPackageConf
-        if buildCommonPackagesOnce
-            then do
-                info "Testing common dependency packages"
-                psCommon <- getCommonDepInstallablePackages
-                zipWithM_ (buildPkg $ length psCommon) psCommon [1..]
-                info "Building common dependency packages"
-                buildInCommon psCommon
-                info "Testing remaining dependency packages"
-                psAll <- getInstallablePackages
-                let psUncommon = psAll \\ psCommon
-                zipWithM_ (buildPkg $ length psUncommon) psUncommon [1..]
-
-            else do
-                psAll <- getInstallablePackages
-                zipWithM_ (buildPkg $ length psAll) psAll [1..]
-
-        dumpResults
+    psAll <- getInstallablePackages
+    zipWithM_ (buildPkg $ length psAll) psAll [1..]
+    dumpResults
 

@@ -1,6 +1,5 @@
 -- | Operations on a single package.
 module Build (
-        buildInCommon,
         buildPkg,
         statPkg
     ) where
@@ -17,29 +16,11 @@ import System.Directory
 import System.Exit
 import System.FilePath
 
--- | Try to install a bunch of packages together in one cabal call.
--- (Experimental, not used right now)
-buildInCommon :: [PkgName] -> Hkg ()
-buildInCommon ps = do
-    comPackageConf <- getCommonPackageConf
-    commonPrefix   <- getCommonPrefix
-    basicFlags     <- getBasicCabalInstallFlags
-    depFlags       <- getDepFlags
-    let extraFlags = [ "--prefix=" ++ commonPrefix
-                     , "--package-db=" ++ comPackageConf
-                     ]
-        args       = ["install"] ++ ps ++ basicFlags ++ extraFlags ++ depFlags
-    x <- runCabal args
-    case x of
-        ExitSuccess -> return ()
-        _           -> die "Can't install common deps together"
-
 -- | Build a single package.
 buildPkg :: Int -> PkgName -> Int -> Hkg ()
 buildPkg npkgs p i = do
     info $ "===> " ++ p ++ " (" ++ show i ++ " of " ++ show npkgs ++ ")"
 
-    comPackageConf <- getCommonPackageConf
     tmpPackageConf <- getTempPackageConf
     initialisePackageConf tmpPackageConf
 
@@ -56,12 +37,6 @@ buildPkg npkgs p i = do
                       -- This is the package database that we
                       -- want cabal to register into:
                     , "--package-db=" ++ tmpPackageConf
-                      -- but we also need GHC to be able to use
-                      -- packages from the common database:
-                    , "--ghc-option=-package-conf=" ++ comPackageConf
-                      -- and likewise ghc-pkg needs to know what
-                      -- packages are in there:
-                    , "--ghc-pkg-option=--package-conf=" ++ comPackageConf
                       -- but cabal can't be trusted to put its
                       -- --package-conf flag after ours, so we need
                       -- to repeat the package.conf we want to
