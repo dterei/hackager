@@ -33,19 +33,23 @@ getPackages = do
 -- results.
 tryBuildingPackages :: Int -> [PkgName] -> Hkg ()
 tryBuildingPackages nthreads ps = do
-    info $ "===> Testing against " ++ show (length ps) ++ " packages..."
+    let n = length ps
+    info $ "===> Testing against " ++ show n ++ " packages..."
     -- Our main objective here is to find out how many times each package would
     -- be installed as a dependency of another package.
-    zipWithM_ (statPkg $ length ps) ps [1..]
+    zipWithM_ (statPkg n) ps [1..]
     info ""
     info ""
     -- Write out the data so we can look at it (by hand) later if we want.
-    dumpStats (length ps)
+    dumpStats n
     psAll    <- getInstallablePackages
     mpsAll   <- liftIO . newMVar $ zip [1..] psAll
     children <- replicateM nthreads (forkChild $ builder (length psAll) mpsAll)
     waitForChildren children
     dumpResults
+    info ""
+    info ""
+    info $ "===> Hackager finished! (" ++ show n ++ " packages tested)"
 
 -- | Function to go through a package list and build them. Thread safe so can
 -- be forked as child processes.

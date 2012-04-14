@@ -9,7 +9,6 @@ import Data.List
 import Distribution.Package
 import Distribution.Text
 import System.Directory
-import System.Exit
 import System.FilePath
 
 import BuildTools
@@ -33,7 +32,8 @@ buildPkg npkgs i p = do
     pkgFlags     <- getPkgFlags
     basicFlags   <- getBasicCabalInstallFlags
 
-    let comFlags = basicFlags ++
+    let deplog   = name </> "logs.build" </> p <.> "depends.log"
+        comFlags = basicFlags ++
                     [ "--prefix=" ++ scratchDir
                       -- This is the package database that we
                       -- want cabal to register into:
@@ -46,25 +46,28 @@ buildPkg npkgs i p = do
                       -- Only we want to display info to the user
                     , "-v0"
                     ]
-        depArgs = ["install", p, "--only-dependencies"] ++ comFlags ++ depFlags
+        depArgs = [ "install", p
+                  , "--only-dependencies"
+                  , "--build-log=" ++ deplog
+                  ] ++ comFlags ++ depFlags
 
     -- try installing package dependencies
-    xDeps <- runCabal depArgs
+    xDeps <- runCabalStdout depArgs
     case xDeps of
-        ExitSuccess -> do
+        (Just _) -> do
             let summaryName = name </> "logs.build" </> p <.> "summary"
                 logName     = name </> "logs.build" </> p <.> "log"
                 pkgArgs     = [ "install", p
                               , "--build-summary=" ++ summaryName
-                              ,  "--build-log=" ++ logName
+                              , "--build-log=" ++ logName
                               ]
                               ++ comFlags ++ pkgFlags
 
             -- try installing package
-            xPkg <- runCabal pkgArgs
+            xPkg <- runCabalStdout pkgArgs
             case xPkg of
-                ExitSuccess -> buildSucceeded p
-                _           -> buildFailed p
+                (Just _) -> buildSucceeded p
+                _        -> buildFailed p
 
         _ -> buildDepsFailed p
 

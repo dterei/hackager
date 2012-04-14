@@ -112,26 +112,19 @@ data StdLine = Stdout String
 runCmdGetStdout :: FilePath -> [String] -> Hkg (Maybe String)
 runCmdGetStdout prog args
     = liftIO
-    $ do (hIn, hOut, hErr, ph) <- runInteractiveProcess prog args
-                                                        Nothing Nothing
+    $ do (hIn, hOut, _, ph) <- runInteractiveProcess prog args Nothing Nothing
          hClose hIn
          mv <- newEmptyMVar
          sOut <- hGetContents hOut
-         sErr <- hGetContents hErr
          _ <- forkIO $ (do _ <- evaluate (length sOut)
-                           return ())
-                        `finally`
-                        putMVar mv ()
-         _ <- forkIO $ (do _ <- evaluate (length sErr)
                            return ())
                         `finally`
                         putMVar mv ()
          ec <- waitForProcess ph
          takeMVar mv
-         takeMVar mv
-         case (ec, sErr) of
-             (ExitSuccess, "") -> return $ Just sOut
-             _ -> return Nothing
+         case ec of
+             ExitSuccess -> return $ Just sOut
+             _           -> return Nothing
 
 -- | Run a cmd returning the fullresults.
 runCmdGetResults :: FilePath -> [String]
