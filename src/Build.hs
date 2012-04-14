@@ -19,7 +19,8 @@ import Utils
 -- | Build a single package.
 buildPkg :: Int -> Int -> PkgName -> Hkg ()
 buildPkg npkgs i p = do
-    info $ "===> " ++ p ++ " (" ++ show i ++ " of " ++ show npkgs ++ ")"
+    info $ "===> Building package " ++ p ++ " (" ++ show i ++ " of "
+            ++ show npkgs ++ ")"
 
     tmpPackageConf <- getTempPackageConf p
     initialisePackageConf tmpPackageConf
@@ -37,11 +38,13 @@ buildPkg npkgs i p = do
                       -- This is the package database that we
                       -- want cabal to register into:
                     , "--package-db=" ++ tmpPackageConf
-                      -- but cabal can't be trusted to put its
+                      -- But cabal can't be trusted to put its
                       -- --package-conf flag after ours, so we need
                       -- to repeat the package.conf we want to
                       -- register into again:
                     , "--ghc-pkg-option=--package-conf=" ++ tmpPackageConf
+                      -- Only we want to display info to the user
+                    , "-v0"
                     ]
         depArgs = ["install", p, "--only-dependencies"] ++ comFlags ++ depFlags
 
@@ -79,7 +82,8 @@ buildPkg npkgs i p = do
 -- * Something we don't understand
 statPkg :: Int -> PkgName -> Int -> Hkg ()
 statPkg npkgs pkg i = do
-    info $ "===> Stat: " ++ pkg ++ " (" ++ show i ++ " of " ++ show npkgs ++ ")"
+    info $ "===> Getting stats for: " ++ pkg ++ " (" ++ show i ++ " of "
+            ++ show npkgs ++ ")"
     name <- getName
     basicFlags <- getBasicCabalInstallFlags
     fs   <- getPkgFlags
@@ -92,7 +96,7 @@ statPkg npkgs pkg i = do
                           , "--build-log=" ++ logName
                           ]
 
-    -- Ideally cabal-install would have written out some
+    -- Ideally cabal would have written out some
     -- sort of log, but it seems not to do so in dry-run
     -- mode, so we do so ourselves
     e <- runCabalResults args
