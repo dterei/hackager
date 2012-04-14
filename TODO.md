@@ -4,4 +4,6 @@
   to compare don't exist
 * Combine Hackager and HackagerReport into one tool
 * Have saner option passing for Hackager
+* Clean up scratch and temp-pkg directories
+* Parallelize the stat phase
 
