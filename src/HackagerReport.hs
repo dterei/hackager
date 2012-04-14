@@ -18,8 +18,26 @@ main = do
     args <- getArgs
     case args of
         [name1, name2] -> report name1 name2
-        _              -> die "Bad arugments"
+        ["-h"    ] -> usageInfo ExitSuccess
+        ["--help"] -> usageInfo ExitSuccess
+        ["help"  ] -> usageInfo ExitSuccess
+        [        ] -> usageInfo ExitSuccess
+        _          -> usageInfo (ExitFailure 1)
 
+-- | Print usage information and exit
+usageInfo :: ExitCode -> IO ()
+usageInfo exitCode = do
+    p <- getProgName
+    mapM_ putStrLn
+        [ "Usage: " ++ p ++  "<name1> <name2>"
+        , "  name1:    The name of the first result"
+        , "  name2:    The name of the second result"
+        , "The two results are then compared with each other, the output"
+        , "is placed in the folder 'compare---<name1>---<name2>'"
+        ]
+    exitWith exitCode
+
+-- | Generate a Hackager comparison report
 report :: String -> String -> IO ()
 report name1 name2 = do
     let compName = "compare---" ++ name1 ++ "---" ++ name2
@@ -66,31 +84,37 @@ report name1 name2 = do
                   ["",    "Deps failed",  num ba1_dF2,  num bF1_dF2,    num dF1_dF2,   num nt1_dF2],
                   ["",    "Not tried",    num ba1_nt2,  num bF1_nt2,    num dF1_nt2,   num nt1_nt2]]
 
-    writeFile (compName </> "buildable-buildable")     (unlines $ Set.toList ba1_ba2)
-    writeFile (compName </> "buildable-buildFailed")   (unlines $ Set.toList ba1_bF2)
-    writeFile (compName </> "buildable-depsFailed")    (unlines $ Set.toList ba1_dF2)
-    writeFile (compName </> "buildable-notTried")      (unlines $ Set.toList ba1_nt2)
-    writeFile (compName </> "buildFailed-buildable")   (unlines $ Set.toList bF1_ba2)
-    writeFile (compName </> "buildFailed-buildFailed") (unlines $ Set.toList bF1_bF2)
-    writeFile (compName </> "buildFailed-depsFailed")  (unlines $ Set.toList bF1_dF2)
-    writeFile (compName </> "buildFailed-notTried")    (unlines $ Set.toList bF1_nt2)
-    writeFile (compName </> "depsFailed-buildable")    (unlines $ Set.toList dF1_ba2)
-    writeFile (compName </> "depsFailed-buildFailed")  (unlines $ Set.toList dF1_bF2)
-    writeFile (compName </> "depsFailed-depsFailed")   (unlines $ Set.toList dF1_dF2)
-    writeFile (compName </> "depsFailed-notTried")     (unlines $ Set.toList dF1_nt2)
-    writeFile (compName </> "notTried-buildable")      (unlines $ Set.toList nt1_ba2)
-    writeFile (compName </> "notTried-buildFailed")    (unlines $ Set.toList nt1_bF2)
-    writeFile (compName </> "notTried-depsFailed")     (unlines $ Set.toList nt1_dF2)
-    writeFile (compName </> "notTried-notTried")       (unlines $ Set.toList nt1_nt2)
-    writeFile (compName </> "summary")                 (unlines $ showTable padders table)
-
+    mapM_ (writeResultFile compName)
+        [ ("buildable-buildable"     , ba1_ba2)
+        , ("buildable-buildFailed"   , ba1_bF2)
+        , ("buildable-depsFailed"    , ba1_dF2)
+        , ("buildable-notTried"      , ba1_nt2)
+        , ("buildFailed-buildable"   , bF1_ba2)
+        , ("buildFailed-buildFailed" , bF1_bF2)
+        , ("buildFailed-depsFailed"  , bF1_dF2)
+        , ("buildFailed-notTried"    , bF1_nt2)
+        , ("depsFailed-buildable"    , dF1_ba2)
+        , ("depsFailed-buildFailed"  , dF1_bF2)
+        , ("depsFailed-depsFailed"   , dF1_dF2)
+        , ("depsFailed-notTried"     , dF1_nt2)
+        , ("notTried-buildable"      , nt1_ba2)
+        , ("notTried-buildFailed"    , nt1_bF2)
+        , ("notTried-depsFailed"     , nt1_dF2)
+        , ("notTried-notTried"       , nt1_nt2)
+        ]
+    writeFile (compName </> "summary") (unlines $ showTable padders table)
     mapM_ putStrLn $ showTable padders table
 
+-- | Write results to a file
+writeResultFile :: FilePath -> (FilePath, Set PkgName) -> IO ()
+writeResultFile dir (f, set) = writeFile (dir </> f) (unlines $ Set.toList set)
 
+-- | Read a list of packages from the file specified
 readPkgList :: FilePath -> IO (Set PkgName)
 readPkgList fp = do xs <- readFile fp
                     return $ Set.fromList $ lines xs
 
+-- | Exit with an error
 die :: String -> IO a
 die err = do hPutStrLn stderr err
              exitWith (ExitFailure 1)
