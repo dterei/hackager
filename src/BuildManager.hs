@@ -33,7 +33,7 @@ getPackages = do
 -- results.
 tryBuildingPackages :: Int -> [PkgName] -> Hkg ()
 tryBuildingPackages nthreads ps = do
-    info "===> Testing against " ++ show (length ps) ++ " packages..."
+    info $ "===> Testing against " ++ show (length ps) ++ " packages..."
     -- Our main objective here is to find out how many times each package would
     -- be installed as a dependency of another package.
     zipWithM_ (statPkg $ length ps) ps [1..]

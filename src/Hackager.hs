@@ -44,7 +44,7 @@ usageInfo :: ExitCode -> IO ()
 usageInfo exitCode = do
     p <- getProgName
     mapM_ putStrLn
-        [ "Usage: Hackager <name> <cabal> <ghc> <ghc-pkg> <dep-flags>"
+        [ "Usage: " ++ p ++  "<name> <cabal> <ghc> <ghc-pkg> <dep-flags>"
         , "                <pkg-flags> <threads> [pkgs]"
         , "name:      A name by which the results of this Hackager run will"
         , "           be referred, e.g. \"ghc-6.12.1\""
@@ -52,12 +52,12 @@ usageInfo exitCode = do
         , "ghc:       The path to the ghc program to use"
         , "ghc-pkg:   The path to the ghc-pkg program to use"
         , "dep-flags: The flags to use when compiling dependencies of a package"
-        , "           e.g. "" or \"-XFoo -XBar\""
+        , "           e.g. \"\" or \"-XFoo -XBar\""
         , "pkg-flags: The flags to use when compiling a package"
-        , "           e.g. "" or \"-XFoo -XBar\""
+        , "           e.g. \"\" or \"-XFoo -XBar\""
         , "threads:   Number of threads to use to build in parallel"
-        , "pkgs:      An optional list of packages to build. If not specified, all"
-        , "           of hackage is built"
+        , "pkgs:      An optional list of packages to build. If not specified"
+        , "           all of hackage is built"
         ]
     exitWith exitCode
 
