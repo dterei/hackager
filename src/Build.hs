@@ -44,7 +44,6 @@ buildPkg npkgs i p = do
                       -- register into again:
                     , "--ghc-pkg-option=--package-conf=" ++ tmpPackageConf
                       -- Only we want to display info to the user
-                    , "-v0"
                     ]
         depArgs = [ "install", p
                   , "--only-dependencies"
@@ -108,10 +107,11 @@ statPkg npkgs pkg i = do
             let resultsLines = "FAILED"
                              : ("Exit code: " ++ show ec)
                              : map mkResultLine ls
-                mkResultLine (Stdout l) = "Stdout: " ++ l
-                mkResultLine (Stderr l) = "Stderr: " ++ l
             liftIO $ writeFile resultName $ unlines resultsLines
             addNotInstallablePackage pkg
+            info $ "===> " ++ pkg ++ " is not installable, skipping!"
+            when (notUpdated resultsLines) $
+                die ("===> Errror: You need to run 'cabal update' first!")
 
         Right ls -> do
             let resultsLines = "SUCCEEDED" : ls
@@ -135,6 +135,13 @@ statPkg npkgs pkg i = do
                         addFailPackage pkg
 
   where
+    notUpdated []       = False
+    notUpdated (x : xs) = if "Stderr: Run 'cabal update'" `isPrefixOf` x
+                            then True
+                            else notUpdated xs
+    mkResultLine (Stdout l) = "Stdout: " ++ l
+    mkResultLine (Stderr l) = "Stderr: " ++ l
+
     listHeaderPrefix = "In order, the following would be installed"
     noPackagesPrefix = "No packages to be installed."
     mangleLine l = case simpleParse l of
