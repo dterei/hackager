@@ -1,9 +1,9 @@
-= Hackager =
+# Hackager
 
 Hackager is a tool to compile all of the Haskell Hackage package
 repository. This is useful for testing Haskell compilers.
 
-== Using ==
+## Using
 Hackager consists of two tools. One is ''Hackager'', the tool used to
 compiler all of Hackage and the other is ''HackagerReport'', the tool
 used to perform a simple comparison of two different runs of Hackager.
@@ -66,7 +66,7 @@ alternative Buildable          628            0           0         0
 These results mean that 73 packages became unbuildable when the
 alternative layout rule is used.
 
-== Caution ==
+## Caution
 
 Hackager can cause arbitrary code to run on your machine. For example:
  * TemplateHaskell is run at compile time and can execute arbitrary
