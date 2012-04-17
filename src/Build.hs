@@ -32,7 +32,8 @@ buildPkg npkgs i p = do
     pkgFlags     <- getPkgFlags
     basicFlags   <- getBasicCabalInstallFlags
 
-    let deplog   = name </> "logs.build" </> p <.> "depends.log"
+    let cabalLog = name </> "logs.build" </> p <.> "cabal.log"
+        deplog   = name </> "logs.build" </> p <.> "depends.log"
         comFlags = basicFlags ++
                     [ "--prefix=" ++ scratchDir
                       -- This is the package database that we
@@ -51,9 +52,9 @@ buildPkg npkgs i p = do
                   ] ++ comFlags ++ depFlags
 
     -- try installing package dependencies
-    xDeps <- runCabalStdout depArgs
+    xDeps <- runCabalResults False depArgs
     case xDeps of
-        (Just _) -> do
+        Right _ -> do
             let summaryName = name </> "logs.build" </> p <.> "summary"
                 logName     = name </> "logs.build" </> p <.> "log"
                 pkgArgs     = [ "install", p
@@ -63,17 +64,22 @@ buildPkg npkgs i p = do
                               ++ comFlags ++ pkgFlags
 
             -- try installing package
-            xPkg <- runCabalStdout pkgArgs
+            xPkg <- runCabalResults False pkgArgs
             case xPkg of
-                (Just _) -> buildSucceeded p
-                _        -> buildFailed p
+                Right _       -> buildSucceeded p
+                Left (_, out) -> toFile cabalLog out >>
+                                 buildFailed p
 
-        _ -> buildDepsFailed p
+        Left (_, out) -> toFile cabalLog out >>
+                         buildDepsFailed p
 
     -- clean up
     liftIO . ignoreException $ removeDirectoryRecursive scratchDir
     liftIO . ignoreException $ removeFile tmpPackageConf
     liftIO . ignoreException $ removeDirectoryRecursive tmpPackageConf
+
+  where
+    toFile f strs = liftIO $ appendFile f (concat strs)
 
 -- | Find out what would happen if we installed the package. Running
 -- cabal-install in dry-run mode may tell us:
@@ -101,12 +107,12 @@ statPkg npkgs pkg i = do
     -- Ideally cabal would have written out some
     -- sort of log, but it seems not to do so in dry-run
     -- mode, so we do so ourselves
-    e <- runCabalResults args
+    e <- runCabalResults True args
     case e of
         Left (ec, ls) -> do
             let resultsLines = "FAILED"
                              : ("Exit code: " ++ show ec)
-                             : map mkResultLine ls
+                             : ls
             liftIO $ writeFile resultName $ unlines resultsLines
             addNotInstallablePackage pkg
             info $ "===> " ++ pkg ++ " is not installable, skipping!"
@@ -139,8 +145,6 @@ statPkg npkgs pkg i = do
     notUpdated (x : xs) = if "Stderr: Run 'cabal update'" `isPrefixOf` x
                             then True
                             else notUpdated xs
-    mkResultLine (Stdout l) = "Stdout: " ++ l
-    mkResultLine (Stderr l) = "Stderr: " ++ l
 
     listHeaderPrefix = "In order, the following would be installed"
     noPackagesPrefix = "No packages to be installed."

@@ -17,15 +17,15 @@ import Utils
 getPackages :: Hkg [PkgName]
 getPackages = do
     info "===> Grabbing a list of all packages on hackage..."
-    m <- runCabalStdout ["list", "--simple-output", "-v0"]
+    m <- runCabalResults False ["list", "--simple-output", "-v0"]
     -- m: abc 0.0.1
     --    abc 0.0.2
     --    dff 0.1.2
     --    ...
     case m of
-        Nothing -> die "Failed to get package list"
-        Just xs ->
-            let ls = map (takeWhile (' ' /=)) $ lines xs
+        Left (_, out) -> die $ "Failed to get package list: " ++ concat out
+        Right xs ->
+            let ls = map (takeWhile (' ' /=)) $ xs
                 ps = uniq $ filter (not . null) ls
             in return ps
 

@@ -1,12 +1,9 @@
 -- | Various tools and utility functions to do wtih building.
 module BuildTools (
-        Child, forkChild, waitForChildren,
-        setupDir,
-        runCabal, runCabalResults, runCabalStdout,
-        runGhcPkg,
-        initialisePackageConf,
         die, info, warn,
-        StdLine(..)
+        Child, forkChild, waitForChildren,
+        setupDir, initialisePackageConf,
+        runCabal, runCabalResults, runGhcPkg
     ) where
 
 import Control.Concurrent
@@ -20,6 +17,22 @@ import System.Process
 
 import HackageMonad
 import Utils
+
+-- | Print message to stdout.
+info :: String -> Hkg ()
+info msg = getIOLock >> liftIO (putStrLn msg) >> releaseIOLock
+
+-- | Print message to stderr.
+warn :: String -> Hkg ()
+warn msg = getIOLock >> liftIO (hPutStrLn stderr msg) >> releaseIOLock
+
+-- | Exit with error message.
+die :: String -> Hkg a
+die err = do
+    getIOLock
+    liftIO $ hPutStrLn stderr err
+    releaseIOLock
+    liftIO $ exitWith (ExitFailure 1)
 
 -- | Children process signal
 type Child = MVar ()
@@ -50,34 +63,6 @@ setupDir name = do
             createDirectory (name </> "logs.stats")
             createDirectory (name </> "logs.build")
 
--- | Run cabal.
-runCabal :: [String] -> Hkg ExitCode
-runCabal args = do
-    cabalInstall <- getCabalInstall
-    x <- liftIO $ rawSystem cabalInstall args
-    return x
-
--- | Run cabal returing the results
-runCabalStdout :: [String] -> Hkg (Maybe String)
-runCabalStdout args = do
-    cabalInstall <- getCabalInstall
-    r <- runCmdGetStdout cabalInstall args
-    return r
-
--- | Run cabal returning the resulting output or error code
-runCabalResults :: [String] -> Hkg (Either (ExitCode, [StdLine]) [String])
-runCabalResults args = do
-    cabalInstall <- getCabalInstall
-    r <- runCmdGetResults cabalInstall args
-    return r
-
--- | Run ghc-pkg.
-runGhcPkg :: [String] -> Hkg ExitCode
-runGhcPkg args = do
-    ghcPkg <- getGhcPkg
-    x <- liftIO $ rawSystem ghcPkg args
-    return x
-
 -- | Setup a package database
 initialisePackageConf :: FilePath -> Hkg ()
 initialisePackageConf fp = do
@@ -88,48 +73,38 @@ initialisePackageConf fp = do
         ExitSuccess -> return ()
         _ -> die ("Initialising package database in " ++ show fp ++ " failed")
 
--- | Print message to stdout.
-info :: String -> Hkg ()
-info msg = getIOLock >> liftIO (putStrLn msg) >> releaseIOLock
+-- | Run cabal.
+runCabal :: [String] -> Hkg ExitCode
+runCabal args = do
+    cabalInstall <- getCabalInstall
+    x <- liftIO $ rawSystem cabalInstall args
+    return x
 
--- | Print message to stderr.
-warn :: String -> Hkg ()
-warn msg = getIOLock >> liftIO (hPutStrLn stderr msg) >> releaseIOLock
+-- | Run cabal returning the resulting output or error code
+-- * Bool: Treat any stderr output as evidence that cabal failed
+-- * [String]: The cabal arguments
+runCabalResults :: Bool -> [String] -> Hkg (Either (ExitCode, [String]) [String])
+runCabalResults errFail args = do
+    cabalInstall <- getCabalInstall
+    r <- runCmdGetResults errFail cabalInstall args
+    return r
 
--- | Exit with error message.
-die :: String -> Hkg a
-die err = do
-    getIOLock
-    liftIO $ hPutStrLn stderr err
-    releaseIOLock
-    liftIO $ exitWith (ExitFailure 1)
+-- | Run ghc-pkg.
+runGhcPkg :: [String] -> Hkg ExitCode
+runGhcPkg args = do
+    ghcPkg <- getGhcPkg
+    x <- liftIO $ rawSystem ghcPkg args
+    return x
 
--- | Command output representation
-data StdLine = Stdout String
-             | Stderr String
-
--- | Run a cmd return its stdout results.
-runCmdGetStdout :: FilePath -> [String] -> Hkg (Maybe String)
-runCmdGetStdout prog args
-    = liftIO
-    $ do (hIn, hOut, _, ph) <- runInteractiveProcess prog args Nothing Nothing
-         hClose hIn
-         mv <- newEmptyMVar
-         sOut <- hGetContents hOut
-         _ <- forkIO $ (do _ <- evaluate (length sOut)
-                           return ())
-                        `finally`
-                        putMVar mv ()
-         ec <- waitForProcess ph
-         takeMVar mv
-         case ec of
-             ExitSuccess -> return $ Just sOut
-             _           -> return Nothing
+data StdLine = Stdout String | Stderr String
 
 -- | Run a cmd returning the fullresults.
-runCmdGetResults :: FilePath -> [String]
-                 -> Hkg (Either (ExitCode, [StdLine]) [String])
-runCmdGetResults prog args = liftIO $ do
+-- * Bool: Treat any stderr output as evidence the cmd failed
+-- * FilePath: The program to run
+-- * [String]: The program arguments
+runCmdGetResults :: Bool -> FilePath -> [String]
+                 -> Hkg (Either (ExitCode, [String]) [String])
+runCmdGetResults errFail prog args = liftIO $ do
     (hIn, hOut, hErr, ph) <- runInteractiveProcess prog args Nothing Nothing
     hClose hIn
     linesMVar <- newEmptyMVar
@@ -139,8 +114,7 @@ runCmdGetResults prog args = liftIO $ do
                           getLines h c
 
         writeLines :: Int -- how many of stdout and stderr are till open
-                   -> [StdLine]
-                   -> IO ()
+                   -> [StdLine] -> IO ()
         writeLines 0 ls = putMVar linesMVar (reverse ls)
         writeLines n ls = do mLine <- takeMVar lineMVar
                              case mLine of
@@ -161,11 +135,17 @@ runCmdGetResults prog args = liftIO $ do
 
     ec <- waitForProcess ph
     ls <- takeMVar linesMVar
-    return $ case (ec, any isStderr ls) of
-                (ExitSuccess, False) -> Right [ sout | Stdout sout <- ls ]
-                _                    -> Left (ec, ls)
+    return $ case (ec, errFail && (any isStderr ls)) of
+                (ExitSuccess, False) -> Right $ map stripResultLine ls
+                _                    -> Left (ec, map mkResultLine ls)
 
   where
     isStderr (Stdout _) = False
     isStderr (Stderr _) = True
+
+    stripResultLine (Stdout l) = l
+    stripResultLine (Stderr l) = l
+
+    mkResultLine (Stdout l) = "Stdout: " ++ l
+    mkResultLine (Stderr l) = "Stderr: " ++ l
 
