@@ -47,7 +47,7 @@ recordHelp exitCode = do
         [ "usage: hackager record <name> <cabal> <ghc> <ghc-pkg> <dep-flags>"
         , "                       <pkg-flags> <threads> [pkgs]"
         , ""
-        , "    name         A name by which the results of this Hackager run will"
+        , "    name         A name by which the results of this hackager run will"
         , "                 be referred, e.g. \"ghc-6.12.1\""
         , "    cabal        The path to the cabal program to use"
         , "    ghc          The path to the ghc program to use"
