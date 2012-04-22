@@ -98,9 +98,8 @@ startState = do
 
 setName :: FilePath -> Hkg ()
 setName name = do
-    st <- get
     dir <- liftIO getCurrentDirectory
-    put $ st { st_name = name, st_dir = dir </> name }
+    modify $ \st -> st { st_name = name, st_dir = dir </> name }
 
 getName :: Hkg FilePath
 getName = get >>= \st -> return $ st_name st
@@ -121,31 +120,31 @@ rmTempDirs = do
     liftIO . ignoreException $ removeDirectoryRecursive (dir </> "scratch")
 
 setCabalInstall :: FilePath -> Hkg ()
-setCabalInstall ci = get >>= \st -> put $ st { st_cabalInstall = ci }
+setCabalInstall ci = modify $ \st -> st { st_cabalInstall = ci }
 
 getCabalInstall :: Hkg FilePath
 getCabalInstall = get >>= \st -> return $ st_cabalInstall st
 
 setGhc :: FilePath -> Hkg ()
-setGhc ghc = get >>= \st -> put $ st { st_ghc = ghc }
+setGhc ghc = modify $ \st -> st { st_ghc = ghc }
 
 getGhc :: Hkg FilePath
 getGhc = get >>= \st -> return $ st_ghc st
 
 setGhcPkg :: FilePath -> Hkg ()
-setGhcPkg ghcPkg = get >>= \st -> put $ st { st_ghcPkg = ghcPkg }
+setGhcPkg ghcPkg = modify $ \st -> st {st_ghcPkg = ghcPkg }
 
 getGhcPkg :: Hkg FilePath
 getGhcPkg = get >>= \st -> return $ st_ghcPkg st
 
 setDepFlags :: String -> Hkg ()
-setDepFlags depFlags = get >>= \st -> put $ st { st_depFlags = parseFlags depFlags }
+setDepFlags depFlags = modify $ \st -> st { st_depFlags = parseFlags depFlags }
 
 getDepFlags :: Hkg [String]
 getDepFlags = get >>= \st -> return $ st_depFlags st
 
 setPkgFlags :: String -> Hkg ()
-setPkgFlags pkgFlags = get >>= \st -> put $ st { st_pkgFlags = parseFlags pkgFlags }
+setPkgFlags pkgFlags = modify $ \st -> st { st_pkgFlags = parseFlags pkgFlags }
 
 getPkgFlags :: Hkg [String]
 getPkgFlags = get >>= \st -> return $ st_pkgFlags st
