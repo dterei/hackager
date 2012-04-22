@@ -1,4 +1,6 @@
 -- | Parse all the option flags for the record command.
+--
+-- This module is pretty ugly but will do.
 module RecordOptions (
         recordHelp,
         processArgs
