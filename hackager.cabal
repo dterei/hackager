@@ -1,16 +1,16 @@
 Name:               Hackager
-Version:            0.2
+Version:            1.0.0
 Synopsis:           Hackage testing tool
 Description:
     Hackager is a program for compiling the entirety of Hackage as a way of
     testing a Haskell compiler.
-Author:             The GHC Team 
+Author:             The GHC Team, David Terei <dave.terei@gmail.com>
 Maintainer:         David Terei <dave.terei@gmail.com>
 License:            BSD3
 License-File:       LICENSE
 Build-type:         Simple
 Stability:          Stable
-Extra-Source-Files: README.md
+Extra-Source-Files: README.md, TODO.md
 Cabal-Version:      >= 1.6
 
 Executable hackager
