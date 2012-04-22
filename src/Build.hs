@@ -74,9 +74,7 @@ buildPkg npkgs i p = do
                          buildDepsFailed p
 
     -- clean up
-    liftIO . ignoreException $ removeDirectoryRecursive scratchDir
-    liftIO . ignoreException $ removeFile tmpPackageConf
-    liftIO . ignoreException $ removeDirectoryRecursive tmpPackageConf
+    rmTempDirs
 
   where
     toFile f strs = liftIO $ appendFile f (concat strs)

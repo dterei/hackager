@@ -43,7 +43,6 @@ report name1 name2 = do
     let compName = "compare---" ++ name1 ++ "---" ++ name2
     exists <- doesDirectoryExist compName
     when exists $ die (show compName ++ " already exists")
-    createDirectory compName
 
     ba1 <- readPkgList (name1 </> "buildable")
     ba2 <- readPkgList (name2 </> "buildable")
@@ -84,6 +83,7 @@ report name1 name2 = do
                   ["",    "Deps failed",  num ba1_dF2,  num bF1_dF2,    num dF1_dF2,   num nt1_dF2],
                   ["",    "Not tried",    num ba1_nt2,  num bF1_nt2,    num dF1_nt2,   num nt1_nt2]]
 
+    createDirectory compName
     mapM_ (writeResultFile compName)
         [ ("buildable-buildable"     , ba1_ba2)
         , ("buildable-buildFailed"   , ba1_bF2)

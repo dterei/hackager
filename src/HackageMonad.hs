@@ -3,14 +3,14 @@
 module HackageMonad (
         PkgName, Hkg, HkgState, startState,
 
-        setName, getName, getTempPackageConf,
-        getScratchDir, getCabalInstall, setCabalInstall,
-        getGhc, setGhc, getGhcPkg, setGhcPkg, getDepFlags, setDepFlags,
-        getPkgFlags, setPkgFlags,
+        getTempPackageConf, getScratchDir, rmTempDirs,
+
+        setName, getName,
+        getCabalInstall, setCabalInstall, getGhc, setGhc, getGhcPkg, setGhcPkg,
+        getDepFlags, setDepFlags, getPkgFlags, setPkgFlags,
 
         addInstall, addInstalledPackage, addInstallablePackage,
-        addNotInstallablePackage, addFailPackage,
-        getInstallablePackages,
+        addNotInstallablePackage, addFailPackage, getInstallablePackages,
         buildSucceeded, buildFailed, buildDepsFailed,
 
         getIOLock, releaseIOLock,
@@ -110,10 +110,15 @@ getDir = get >>= \st -> return $ st_dir st
 
 getTempPackageConf :: PkgName -> Hkg FilePath
 getTempPackageConf p = getDir >>= \dir -> return
-    $ dir </> "temp-pkg" </> p </> "temp.package.conf"
+    $ dir </> "scratch" </> p <.> "package.conf"
 
 getScratchDir :: PkgName -> Hkg FilePath
 getScratchDir p = getDir >>= \dir -> return $ dir </> "scratch" </> p
+
+rmTempDirs :: Hkg ()
+rmTempDirs = do
+    dir <- getDir
+    liftIO . ignoreException $ removeDirectoryRecursive (dir </> "scratch")
 
 setCabalInstall :: FilePath -> Hkg ()
 setCabalInstall ci = get >>= \st -> put $ st { st_cabalInstall = ci }
