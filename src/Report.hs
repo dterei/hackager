@@ -1,11 +1,13 @@
 -- | Reporting tool. Perform a comparision of two Hackage Test runs.
-module Main (main) where
+module Report (
+        report,
+        reportHelp
+    ) where
 
 import Control.Monad
 import Data.Set (Set)
 import qualified Data.Set as Set
 import System.Directory
-import System.Environment
 import System.Exit
 import System.FilePath
 import System.IO
@@ -13,33 +15,32 @@ import System.IO
 import HackageMonad (PkgName)
 import Utils
 
-main :: IO ()
-main = do
-    args <- getArgs
+-- | Run the reporting tool.
+report :: [String] -> IO ()
+report args = do
     case args of
-        [name1, name2] -> report name1 name2
-        ["-h"    ] -> usageInfo ExitSuccess
-        ["--help"] -> usageInfo ExitSuccess
-        ["help"  ] -> usageInfo ExitSuccess
-        [        ] -> usageInfo ExitSuccess
-        _          -> usageInfo (ExitFailure 1)
+        [name1, name2] -> generate name1 name2
+        ["--help"    ] -> reportHelp ExitSuccess
+        [            ] -> reportHelp (ExitFailure 1)
+        _              -> reportHelp (ExitFailure 1)
 
 -- | Print usage information and exit
-usageInfo :: ExitCode -> IO ()
-usageInfo exitCode = do
-    p <- getProgName
+reportHelp :: ExitCode -> IO ()
+reportHelp exitCode = do
     mapM_ putStrLn
-        [ "Usage: " ++ p ++  "<name1> <name2>"
-        , "  name1:    The name of the first result"
-        , "  name2:    The name of the second result"
+        [ "usage: hackager report <name1> <name2>"
+        , ""
+        , "    name1    The name of the first result"
+        , "    name2    The name of the second result"
+        , ""
         , "The two results are then compared with each other, the output"
         , "is placed in the folder 'compare---<name1>---<name2>'"
         ]
     exitWith exitCode
 
 -- | Generate a Hackager comparison report
-report :: String -> String -> IO ()
-report name1 name2 = do
+generate :: String -> String -> IO ()
+generate name1 name2 = do
     let compName = "compare---" ++ name1 ++ "---" ++ name2
     exists <- doesDirectoryExist compName
     when exists $ die (show compName ++ " already exists")

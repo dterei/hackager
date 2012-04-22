@@ -1,66 +1,50 @@
 -- | Hackage Test. Build all of hackage.
 module Main (main) where
 
-import Control.Monad.State
 import System.Environment
 import System.Exit
-import System.IO
 
-import BuildManager
-import BuildTools
-import HackageMonad
+import Record
+import Report
 
 -- | Hackage Test (IO)
 main :: IO ()
 main = do
-    st <- startState
-    evalStateT mainST st
-
--- | Hackage Test (Monad)
-mainST :: Hkg ()
-mainST = do
-    liftIO $ hSetBuffering stdout NoBuffering
-    args <- liftIO getArgs
+    args <- getArgs
     case args of
-       name : cabalInstall : ghc : ghcPkg : depFlags : pkgFlags : threads : ps -> do
-           setupDir name
-           setName name
-           setCabalInstall cabalInstall
-           setGhc ghc
-           setGhcPkg ghcPkg
-           setDepFlags depFlags
-           setPkgFlags pkgFlags
-           ps' <- case ps of
-                   [] -> getPackages
-                   _  -> return ps
-           tryBuildingPackages (read threads) ps'
+        ("record" : args') -> record args'
+        ("report" : args') -> report args'
+        ("help"   : args') -> help args'
+        ["--version"] -> version
+        ["--help"   ] -> usageInfo ExitSuccess
+        [           ] -> usageInfo (ExitFailure 1)
+        _             -> usageInfo (ExitFailure 1)
 
-       ["-h"    ] -> liftIO $ usageInfo ExitSuccess
-       ["--help"] -> liftIO $ usageInfo ExitSuccess
-       ["help"  ] -> liftIO $ usageInfo ExitSuccess
-       [        ] -> liftIO $ usageInfo ExitSuccess
-       _          -> liftIO $ usageInfo (ExitFailure 1)
+-- | Hackager version
+version :: IO ()
+version = putStrLn "hackager version 1.0.0"
+
+-- | The help command
+help :: [String] -> IO ()
+help [] = usageInfo ExitSuccess
+help ["record"] = recordHelp ExitSuccess
+help ["report"] = reportHelp ExitSuccess
+help [x       ] = putStrLn ("Command '" ++ x ++  "' doesn't exist")
+                  >> exitWith (ExitFailure 1)
+help _          = usageInfo (ExitFailure 1)
 
 -- | Print usage information and exit
 usageInfo :: ExitCode -> IO ()
 usageInfo exitCode = do
-    p <- getProgName
     mapM_ putStrLn
-        [ "Usage: " ++ p ++  "<name> <cabal> <ghc> <ghc-pkg> <dep-flags>"
-        , "                <pkg-flags> <threads> [pkgs]"
+        [ "usage: hackager [--version] [--help] <command> [<args>]"
         , ""
-        , "  name:      A name by which the results of this Hackager run will"
-        , "             be referred, e.g. \"ghc-6.12.1\""
-        , "  cabal:     The path to the cabal program to use"
-        , "  ghc:       The path to the ghc program to use"
-        , "  ghc-pkg:   The path to the ghc-pkg program to use"
-        , "  dep-flags: The flags to use when compiling dependencies of a package"
-        , "             e.g. \"\" or \"-XFoo -XBar\""
-        , "  pkg-flags: The flags to use when compiling a package"
-        , "             e.g. \"\" or \"-XFoo -XBar\""
-        , "  threads:   Number of threads to use to build in parallel"
-        , "  pkgs:      An optional list of packages to build. If not specified"
-        , "             all of hackage is built"
+        , "The valid hackager commands are:"
+        , "    record    Try building all of hackage and record results"
+        , "    report    Compare two 'record' runs and display results"
+        , ""
+        , "See 'hackager help <command>' for more information on a"
+           ++ " specific command"
         ]
     exitWith exitCode
 

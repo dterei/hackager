@@ -13,7 +13,7 @@ Stability:          Stable
 Extra-Source-Files: README.md
 Cabal-Version:      >= 1.6
 
-Executable Hackager
+Executable hackager
     Main-Is: Hackager.hs
     HS-Source-Dirs: src
     Ghc-Options: -threaded -Wall -Werror
@@ -24,12 +24,4 @@ Executable Hackager
                    filepath,
                    mtl,
                    process
-
-Executable HackagerReport
-    Main-Is: HackagerReport.hs
-    HS-Source-Dirs: src
-    Ghc-Options: -threaded -Wall -Werror
-    Build-Depends: base        >= 2 && < 5,
-                   containers,
-                   filepath
 
