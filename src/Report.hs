@@ -42,8 +42,15 @@ reportHelp exitCode = do
 generate :: String -> String -> IO ()
 generate name1 name2 = do
     let compName = "compare---" ++ name1 ++ "---" ++ name2
+
+    -- check valid input and outputs
+    n1exists <- doesDirectoryExist name1
+    when (not n1exists) $ die ("'" ++ name1 ++ "' doesn't exists")
+    n2exists <- doesDirectoryExist name2
+    when (not n2exists) $ die ("'" ++ name2 ++ "' doesn't exists")
     exists <- doesDirectoryExist compName
-    when exists $ die (show compName ++ " already exists")
+    when exists $
+        die ("The directoy '"compName ++ "' already exists, won't overwrite")
 
     ba1 <- readPkgList (name1 </> "buildable")
     ba2 <- readPkgList (name2 </> "buildable")
