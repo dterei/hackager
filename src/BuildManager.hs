@@ -31,22 +31,23 @@ getPackages = do
 
 -- | Loop over given packages and try to build each of them, recording the
 -- results.
-tryBuildingPackages :: Int -> [PkgName] -> Hkg ()
-tryBuildingPackages nthreads ps = do
+tryBuildingPackages :: [PkgName] -> Hkg ()
+tryBuildingPackages ps = do
     let n = length ps
     info $ "===> Testing against " ++ show n ++ " packages..."
-    runOnAllPkgs nthreads ps statPkg
+    runOnAllPkgs ps statPkg
     dumpStats n
     psAll    <- getInstallablePackages
-    runOnAllPkgs nthreads psAll buildPkg
+    runOnAllPkgs psAll buildPkg
     dumpResults
     rmTempDir
     info $ "===> Hackager finished! (" ++ show n ++ " packages tested)"
 
 -- | Run in parallel a PkgProcessor function over the given list
 -- of packages with the specified number of threads.
-runOnAllPkgs :: Int -> [PkgName] -> PkgProcessor -> Hkg ()
-runOnAllPkgs nthreads pkgs pkgFun = do
+runOnAllPkgs :: [PkgName] -> PkgProcessor -> Hkg ()
+runOnAllPkgs pkgs pkgFun = do
+    nthreads <- getThreads
     mpkgs <- liftIO . newMVar $ zip [1..] pkgs
     let runner = builder pkgFun (length pkgs) mpkgs
     children <- replicateM nthreads $ forkChild runner

@@ -16,7 +16,7 @@ Cabal-Version:      >= 1.6
 Executable hackager
     Main-Is: Hackager.hs
     HS-Source-Dirs: src
-    Ghc-Options: -threaded -Wall -Werror
+    Ghc-Options: -threaded -Wall
     Build-Depends: base        >= 2 && < 5,
                    Cabal,
                    containers,

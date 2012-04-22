@@ -7,7 +7,8 @@ module HackageMonad (
 
         setName, getName,
         getCabalInstall, setCabalInstall, getGhc, setGhc, getGhcPkg, setGhcPkg,
-        getDepFlags, setDepFlags, getPkgFlags, setPkgFlags,
+        getDepFlags, setDepFlags, getPkgFlags, setPkgFlags, addPkg, getPkgs,
+        setThreads, getThreads,
 
         addInstall, addInstalledPackage, addInstallablePackage,
         addNotInstallablePackage, addFailPackage, getInstallablePackages,
@@ -46,6 +47,8 @@ data HkgState = HkgState {
         st_ghcPkg       :: FilePath,
         st_depFlags     :: [String],
         st_pkgFlags     :: [String],
+        st_threads      :: Int,
+        st_pkgs         :: Set PkgName,
 
         -- These are set by the stats-collection pass:
         st_installedPackages      :: MVar (Set PkgName),
@@ -82,6 +85,8 @@ startState = do
         st_ghcPkg                  = "",
         st_depFlags                = [],
         st_pkgFlags                = [],
+        st_threads                 = 1,
+        st_pkgs                    = Set.empty,
         st_installedPackages       = ipkgs,
         st_installablePackages     = apkgs,
         st_notInstallablePackages  = npkgs,
@@ -154,6 +159,20 @@ setPkgFlags pkgFlags = modify $ \st -> st { st_pkgFlags = parseFlags pkgFlags }
 
 getPkgFlags :: Hkg [String]
 getPkgFlags = get >>= \st -> return $ st_pkgFlags st
+
+addPkg :: String -> Hkg ()
+addPkg p = modify $ \st -> st {st_pkgs = Set.insert p (st_pkgs st) }
+
+getPkgs :: Hkg [String]
+getPkgs = do
+    st <- get
+    return $ Set.toList (st_pkgs st)
+
+setThreads :: Int -> Hkg ()
+setThreads n = modify $ \st -> st { st_threads = n }
+
+getThreads :: Hkg Int
+getThreads = get >>= \st -> return $ st_threads st
 
 parseFlags :: String -> [String]
 parseFlags str =

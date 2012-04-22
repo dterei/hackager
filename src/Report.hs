@@ -49,8 +49,8 @@ generate name1 name2 = do
     n2exists <- doesDirectoryExist name2
     when (not n2exists) $ die ("'" ++ name2 ++ "' doesn't exists")
     exists <- doesDirectoryExist compName
-    when exists $
-        die ("The directoy '"compName ++ "' already exists, won't overwrite")
+    when exists $ die ("The directoy '" ++ compName ++
+        "' already exists, won't overwrite")
 
     ba1 <- readPkgList (name1 </> "buildable")
     ba2 <- readPkgList (name2 </> "buildable")
