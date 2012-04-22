@@ -78,7 +78,7 @@ buildPkg npkgs i p = do
                          buildDepsFailed p
 
     -- clean up
-    rmTempDirs
+    rmScratchDir p
 
   where
     toFile f strs = liftIO $ appendFile f (concat strs)

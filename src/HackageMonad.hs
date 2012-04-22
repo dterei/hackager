@@ -3,7 +3,7 @@
 module HackageMonad (
         PkgName, Hkg, HkgState, startState,
 
-        getTempPackageConf, getScratchDir, rmTempDirs,
+        getTempPackageConf, getScratchDir, rmScratchDir, rmTempDir,
 
         setName, getName,
         getCabalInstall, setCabalInstall, getGhc, setGhc, getGhcPkg, setGhcPkg,
@@ -114,8 +114,14 @@ getTempPackageConf p = getDir >>= \dir -> return
 getScratchDir :: PkgName -> Hkg FilePath
 getScratchDir p = getDir >>= \dir -> return $ dir </> "scratch" </> p
 
-rmTempDirs :: Hkg ()
-rmTempDirs = do
+rmScratchDir :: PkgName -> Hkg ()
+rmScratchDir p = do
+    dir <- getDir
+    liftIO . ignoreException $
+        removeDirectoryRecursive (dir </> "scratch" </> p)
+
+rmTempDir :: Hkg ()
+rmTempDir = do
     dir <- getDir
     liftIO . ignoreException $ removeDirectoryRecursive (dir </> "scratch")
 
