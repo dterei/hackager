@@ -1,5 +1,6 @@
 -- | Operations on a single package.
 module Build (
+        PkgProcessor,
         buildPkg,
         statPkg
     ) where
@@ -15,8 +16,11 @@ import BuildTools
 import HackageMonad
 import Utils
 
+-- | Type of a function that processes packages (and can be parallelized)
+type PkgProcessor = Int -> Int -> PkgName -> Hkg ()
+
 -- | Build a single package.
-buildPkg :: Int -> Int -> PkgName -> Hkg ()
+buildPkg :: PkgProcessor
 buildPkg npkgs i p = do
     info $ "===> Building package " ++ p ++ " (" ++ show i ++ " of "
             ++ show npkgs ++ ")"
@@ -86,8 +90,8 @@ buildPkg npkgs i p = do
 -- * The package is installable, and which other packages we would have to
 --   install in order to install it
 -- * Something we don't understand
-statPkg :: Int -> PkgName -> Int -> Hkg ()
-statPkg npkgs pkg i = do
+statPkg :: PkgProcessor
+statPkg npkgs i pkg = do
     info $ "===> Getting stats for: " ++ pkg ++ " (" ++ show i ++ " of "
             ++ show npkgs ++ ")"
     name <- getName

@@ -14,11 +14,11 @@ import HackageMonad
 main :: IO ()
 main = do
     st <- startState
-    evalStateT main' st
+    evalStateT mainST st
 
 -- | Hackage Test (Monad)
-main' :: Hkg ()
-main' = do
+mainST :: Hkg ()
+mainST = do
     liftIO $ hSetBuffering stdout NoBuffering
     args <- liftIO getArgs
     case args of
