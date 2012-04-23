@@ -77,8 +77,8 @@ initialisePackageConf fp = do
 -- | Run cabal.
 runCabal :: [String] -> Hkg ExitCode
 runCabal args = do
-    cabalInstall <- getCabalInstall
-    x <- liftIO $ rawSystem cabalInstall args
+    cabal <- getCabal
+    x <- liftIO $ rawSystem cabal args
     return x
 
 -- | Run cabal returning the resulting output or error code
@@ -86,8 +86,8 @@ runCabal args = do
 -- * [String]: The cabal arguments
 runCabalResults :: Bool -> [String] -> Hkg (Either (ExitCode, [String]) [String])
 runCabalResults errFail args = do
-    cabalInstall <- getCabalInstall
-    r <- runCmdGetResults errFail cabalInstall args
+    cabal <- getCabal
+    r <- runCmdGetResults errFail cabal args
     return r
 
 -- | Run ghc-pkg.

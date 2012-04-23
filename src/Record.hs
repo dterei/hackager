@@ -17,11 +17,11 @@ import RecordOptions
 record :: [String] -> IO ()
 record args = do
     st <- startState
-    evalStateT (mainST args) st
+    evalStateT (recordST args) st
 
 -- | Hackage Test (Monad).
-mainST :: [String] -> Hkg ()
-mainST args = do
+recordST :: [String] -> Hkg ()
+recordST args = do
     liftIO $ hSetBuffering stdout NoBuffering
     case args of
         [        ] -> liftIO $ recordHelp (ExitFailure 1)

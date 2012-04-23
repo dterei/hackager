@@ -6,7 +6,7 @@ module HackageMonad (
         getTempPackageConf, getScratchDir, rmScratchDir, rmTempDir,
 
         setName, getName,
-        getCabalInstall, setCabalInstall, getGhc, setGhc, getGhcPkg, setGhcPkg,
+        getCabal, setCabal, getGhc, setGhc, getGhcPkg, setGhcPkg,
         getDepFlags, setDepFlags, getPkgFlags, setPkgFlags, addPkg, getPkgs,
         setThreads, getThreads,
 
@@ -40,15 +40,15 @@ type Hkg = StateT HkgState IO
 -- | The state of Hackager
 data HkgState = HkgState {
         -- These are set based on the command line flags
-        st_name         :: FilePath,
-        st_dir          :: FilePath,
-        st_cabalInstall :: FilePath,
-        st_ghc          :: FilePath,
-        st_ghcPkg       :: FilePath,
-        st_depFlags     :: [String],
-        st_pkgFlags     :: [String],
-        st_threads      :: Int,
-        st_pkgs         :: Set PkgName,
+        st_name     :: FilePath,
+        st_dir      :: FilePath,
+        st_cabal    :: FilePath,
+        st_ghc      :: FilePath,
+        st_ghcPkg   :: FilePath,
+        st_depFlags :: [String],
+        st_pkgFlags :: [String],
+        st_threads  :: Int,
+        st_pkgs     :: Set PkgName,
 
         -- These are set by the stats-collection pass:
         st_installedPackages      :: MVar (Set PkgName),
@@ -68,11 +68,11 @@ data HkgState = HkgState {
 
 startState :: IO HkgState
 startState = do
-    ipkgs <- newMVar Set.empty
-    apkgs <- newMVar Set.empty
-    npkgs <- newMVar Set.empty
-    fpkgs <- newMVar Set.empty
-    count <- newMVar Map.empty
+    ipkgs  <- newMVar Set.empty
+    apkgs  <- newMVar Set.empty
+    npkgs  <- newMVar Set.empty
+    fpkgs  <- newMVar Set.empty
+    count  <- newMVar Map.empty
     bbpkgs <- newMVar Set.empty
     bfpkgs <- newMVar Set.empty
     bdpkgs <- newMVar Set.empty
@@ -80,7 +80,7 @@ startState = do
     return $ HkgState {
         st_name                    = "",
         st_dir                     = "",
-        st_cabalInstall            = "",
+        st_cabal                   = "",
         st_ghc                     = "",
         st_ghcPkg                  = "",
         st_depFlags                = [],
@@ -130,11 +130,11 @@ rmTempDir = do
     dir <- getDir
     liftIO . ignoreException $ removeDirectoryRecursive (dir </> "scratch")
 
-setCabalInstall :: FilePath -> Hkg ()
-setCabalInstall ci = modify $ \st -> st { st_cabalInstall = ci }
+setCabal :: FilePath -> Hkg ()
+setCabal ci = modify $ \st -> st { st_cabal = ci }
 
-getCabalInstall :: Hkg FilePath
-getCabalInstall = get >>= \st -> return $ st_cabalInstall st
+getCabal :: Hkg FilePath
+getCabal = get >>= \st -> return $ st_cabal st
 
 setGhc :: FilePath -> Hkg ()
 setGhc ghc = modify $ \st -> st { st_ghc = ghc }

@@ -34,7 +34,7 @@ buildPkg npkgs i p = do
     name         <- getName
     depFlags     <- getDepFlags
     pkgFlags     <- getPkgFlags
-    basicFlags   <- getBasicCabalInstallFlags
+    basicFlags   <- getBasicCabalFlags
 
     let cabalLog = name </> "logs.build" </> p <.> "cabal.log"
         deplog   = name </> "logs.build" </> p <.> "depends.log"
@@ -95,7 +95,7 @@ statPkg npkgs i pkg = do
     info $ "===> Getting stats for: " ++ pkg ++ " (" ++ show i ++ " of "
             ++ show npkgs ++ ")"
     name <- getName
-    basicFlags <- getBasicCabalInstallFlags
+    basicFlags <- getBasicCabalFlags
     fs   <- getPkgFlags
     let summaryName = name </> "logs.stats" </> pkg <.> "summary"
         logName     = name </> "logs.stats" </> pkg <.> "log"
@@ -157,8 +157,8 @@ statPkg npkgs i pkg = do
                            return pn
 
 -- | Get the default cabal flags to use.
-getBasicCabalInstallFlags :: Hkg [String]
-getBasicCabalInstallFlags = do
+getBasicCabalFlags :: Hkg [String]
+getBasicCabalFlags = do
     ghc <- getGhc
     ghcPkg <- getGhcPkg
     return [ "--remote-build-reporting=none"

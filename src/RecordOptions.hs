@@ -1,6 +1,4 @@
 -- | Parse all the option flags for the record command.
---
--- This module is pretty ugly but will do.
 module RecordOptions (
         recordHelp,
         processArgs
@@ -57,10 +55,10 @@ processOpt "o" name = do
     setName name
 
 processOpt "c" cabal = do
-    checkNotSet getCabalInstall "cabal program is already set"
+    checkNotSet getCabal "cabal program is already set"
     checkNotOption cabal "cabal program is invalid"
     checkExecutable cabal "cabal"
-    setCabalInstall cabal
+    setCabal cabal
 
 processOpt "g" ghc = do
     checkNotSet getGhc "ghc program is already set"
@@ -103,7 +101,7 @@ validateFlags :: Hkg ()
 validateFlags = do
     n <- getName
     when (n == "") $ badflag "output directory not set"
-    setExecutable getCabalInstall setCabalInstall "cabal"
+    setExecutable getCabal setCabal "cabal"
     setExecutable getGhc setGhc "ghc"
     setExecutable getGhcPkg setGhcPkg "ghc-pkg"
 
