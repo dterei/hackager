@@ -9,6 +9,7 @@ import System.Exit
 import System.IO
 
 import BuildManager
+import BuildTools
 import HackageMonad
 import RecordOptions
 
@@ -28,6 +29,7 @@ mainST args = do
         _ -> do
             processArgs args
             ps <- getPkgs
+            setupDir
             ps' <- case ps of
                     [] -> getPackages
                     _  -> return ps

@@ -53,8 +53,9 @@ waitForChildren (child : children) = do
     waitForChildren children
 
 -- | Setup the needed directory structure
-setupDir:: String -> Hkg ()
-setupDir name = do
+setupDir:: Hkg ()
+setupDir = do
+    name <- getName
     exists <- liftIO $ doesDirectoryExist name
     if exists
         then die (show name ++ " already exists, not overwriting")

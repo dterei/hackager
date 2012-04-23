@@ -49,7 +49,6 @@ processArgs args             = parsePackages args >> validateFlags
 
 -- | Parse an individual option flag
 processOpt :: String -> String -> Hkg ()
-
 processOpt "o" name = do
     checkNotSet getName "output directory is already set"
     checkNotOption name "the output directory is invalid"
@@ -80,7 +79,7 @@ processOpt "d" depflags = do
     setDepFlags depflags
 
 processOpt "f" pkgflags = do
-    checkNotSet getPkgFlags "dependency flags already set"
+    checkNotSet getPkgFlags "package flags already set"
     setPkgFlags pkgflags
 
 processOpt "n" threads = do
@@ -104,6 +103,27 @@ validateFlags :: Hkg ()
 validateFlags = do
     n <- getName
     when (n == "") $ badflag "output directory not set"
+    setExecutable getCabalInstall setCabalInstall "cabal"
+    setExecutable getGhc setGhc "ghc"
+    setExecutable getGhcPkg setGhcPkg "ghc-pkg"
+
+-- | Set the executable to what's on the PATH if not set
+setExecutable :: Hkg FilePath -> (FilePath -> Hkg ()) -> String -> Hkg ()
+setExecutable getx setx name = do
+    x <- getx
+    when (x == "") $ do
+        ci <- liftIO $ findExecutable name
+        case ci of
+            Nothing  -> badflag $ "can't find " ++ name ++ " executable"
+            Just ci' -> setx ci'
+
+-- | Make sure a file exists and is executable
+checkExecutable :: String -> String -> Hkg ()
+checkExecutable f prog = do
+    b <- liftIO $ doesFileExist f
+    when (not b) $ badflag $ prog ++ " executable doesn't exist"
+    p <- liftIO $ getPermissions f
+    when (not $ executable p) $ badflag $ prog ++ " file is not executable"
 
 -- | Make sure a flag hasn't been set before
 checkNotSet :: Hkg [a] -> String -> Hkg ()
@@ -117,14 +137,6 @@ checkNotSet getter errmsg = do
 checkNotOption :: String -> String -> Hkg ()
 checkNotOption ('-':_) errmsg = badflag errmsg
 checkNotOption _ _            = return ()
-
--- | Make sure a file exists and is executable
-checkExecutable :: String -> String -> Hkg ()
-checkExecutable f prog = do
-    b <- liftIO $ doesFileExist f
-    when (not b) $ badflag $ prog ++ " executable doesn't exist"
-    p <- liftIO $ getPermissions f
-    when (not $ executable p) $ badflag $ prog ++ " file is not executable"
 
 -- | Parse a string to an int
 toInt :: String -> Maybe Int
