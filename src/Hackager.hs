@@ -18,7 +18,9 @@ main = do
         ["--version"] -> version
         ["--help"   ] -> usageInfo ExitSuccess
         [           ] -> usageInfo (ExitFailure 1)
-        _             -> usageInfo (ExitFailure 1)
+        x:_           -> putStrLn ("hackager: '" ++ x ++ "' is not a hackager"
+                            ++ " command. See 'hackager --help'.")
+                         >> exitWith (ExitFailure 1)
 
 -- | Hackager version
 version :: IO ()
@@ -26,7 +28,7 @@ version = putStrLn "hackager version 1.0.0"
 
 -- | The help command
 help :: [String] -> IO ()
-help [] = usageInfo ExitSuccess
+help [        ] = usageInfo ExitSuccess
 help ["record"] = recordHelp ExitSuccess
 help ["report"] = reportHelp ExitSuccess
 help [x       ] = putStrLn ("Command '" ++ x ++  "' doesn't exist")
