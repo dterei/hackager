@@ -25,7 +25,7 @@ usage: hackager record -o NAME [-c CABAL] [-g GHC] [-p GHC-PKG] [-d DEP-FLAGS]
                       [-f PKG-FLAGS] [-n THREADS] [PKGS...]
 
     NAME         A name by which the results of this hackager run will
-                 be referred, e.g. \"ghc-6.12.1\"
+                 be referred, e.g. \"ghc-7.6.1\"
     CABAL        The path to the cabal program to use
     GHC          The path to the ghc program to use
     GHC-PKG      The path to the ghc-pkg program to use
@@ -42,34 +42,27 @@ For example, here is a run with GHC, no special options and using 4
 threads (note that this generally takes a long time, i.e. a few days):
 
 ~~~ {.sh}
-$ hackager record -o normal -c /usr/local/bin/cabal \
-                            -g /usr/local/bin/ghc \
-                            -p /usr/local/bin/ghc-pkg \
-                            -n 4
+$ hackager record -o normal -n 4
 ~~~~
 
 Then another run, this time using ''-XAlternativeLayoutRule'' to
 compile each package (but not the build dependencies of the package):
 
 ~~~~ {.sh}
-$ hackager record -o alternative -c /usr/local/bin/cabal \
-                                 -g /usr/local/bin/ghc \
-                                 -p /usr/local/bin/ghc-pkg \
-                                 -f "--ghc-option=-XAlternativeLayoutRule"
-                                 -n 4
+$ hackager record -o altern -f "--ghc-option=-XAlternativeLayoutRule" -n 4
 ~~~~
 
 And finally a comparison of the results:
 
 ~~~~ {.sh}
-$ hackager report normal alternative
+$ hackager report normal altern
 
                             normal
                          Buildable Build failed Deps failed Not tried
-alternative Buildable          628            0           0         0
-            Build failed        73          215           0         0
-            Deps failed          0            0         170         0
-            Not tried            0            0           0         0
+altern Buildable          628            0           0         0
+       Build failed        73          215           0         0
+       Deps failed          0            0         170         0
+       Not tried            0            0           0         0
 ~~~~
 
 These results mean that 73 packages became unbuildable when the
