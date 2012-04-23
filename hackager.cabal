@@ -1,5 +1,5 @@
 Name:               hackager
-Version:            1.0.0
+Version:            1.0.1
 Synopsis:           Hackage testing tool
 Description:
     Hackager is a program for compiling the entirety of Hackage as a way of
@@ -23,6 +23,14 @@ Source-Repository head
 
 Executable hackager
     Main-Is: Hackager.hs
+    Other-Modules: Build
+                   BuildManager
+                   BuildTools
+                   HackageMonad
+                   Record
+                   RecordOptions
+                   Report
+                   Utils
     HS-Source-Dirs: src
     Ghc-Options: -threaded
     Build-Depends: base        >= 2 && < 5,
