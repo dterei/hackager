@@ -4,19 +4,27 @@ Synopsis:           Hackage testing tool
 Description:
     Hackager is a program for compiling the entirety of Hackage as a way of
     testing a Haskell compiler.
+Category:           Compiler, GHC, Testing
 Author:             The GHC Team, David Terei <dave.terei@gmail.com>
 Maintainer:         David Terei <dave.terei@gmail.com>
+Homepage:           https://github.com/dterei/Hackager
+Bug-Reports:        https://github.com/dterei/Hackager/issues
 License:            BSD3
 License-File:       LICENSE
-Build-type:         Simple
 Stability:          Stable
+
+Build-Type:         Simple
 Extra-Source-Files: README.md, TODO.md
 Cabal-Version:      >= 1.6
+
+Source-Repository head
+    Type: git
+    Location: git://github.com/dterei/Hackager.git
 
 Executable hackager
     Main-Is: Hackager.hs
     HS-Source-Dirs: src
-    Ghc-Options: -threaded -Wall -Werror
+    Ghc-Options: -threaded
     Build-Depends: base        >= 2 && < 5,
                    Cabal,
                    containers,
