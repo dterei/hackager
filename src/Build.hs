@@ -150,7 +150,7 @@ statPkg npkgs i pkg = do
 
     listHeaderPrefix = "In order, the following would be installed"
     noPackagesPrefix = "No packages to be installed."
-    mangleLine l = case simpleParse l of
+    mangleLine l = case simpleParse . takeWhile (/= ' ') $ l of
                        Nothing ->
                            die ("Unparseable line: " ++ show l)
                        Just (PackageIdentifier (PackageName pn) _) ->
