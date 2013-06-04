@@ -76,3 +76,18 @@ Hackager can cause arbitrary code to run on your machine. For example:
  * Package configure scripts will be run
  * Custom Setup.hs programs will be run
 
+## Get involved!
+
+We are happy to receive bug reports, fixes, documentation
+enhancements, and other improvements.
+
+Please report bugs via the
+[github issue tracker](http://github.com/dterei/Hackager/issues).
+
+Master [git repository](http://github.com/dterei/Hackager):
+
+* `git clone git://github.com/dterei/Hackager.git`
+
+## Licensing
+
+This library is BSD-licensed.
