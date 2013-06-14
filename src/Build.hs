@@ -101,7 +101,7 @@ statPkg npkgs i pkg = do
         logName     = name </> "logs.stats" </> pkg <.> "log"
         resultName  = name </> "logs.stats" </> pkg <.> "result"
         args        = basicFlags ++ fs ++
-                          [ "install", "--dry-run", pkg
+                          [ "install", "--dry-run", "--reinstall", pkg
                           , "--build-summary=" ++ summaryName
                           , "--build-log=" ++ logName
                           ]
