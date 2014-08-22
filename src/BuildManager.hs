@@ -23,7 +23,7 @@ getPackages = do
     --    dff 0.1.2
     --    ...
     case m of
-        Left (_, out) -> die $ "Failed to get package list: " ++ concat out
+        Left (_, out) -> die $ "Failed to get package list: " ++ unlines out
         Right xs ->
             let ls = map (takeWhile (' ' /=)) $ xs
                 ps = uniq $ filter (not . null) ls

@@ -49,6 +49,8 @@ buildPkg npkgs i p = do
                       -- register into again:
                     , "--ghc-pkg-option=--package-conf=" ++ tmpPackageConf
                       -- Only we want to display info to the user
+                    , "-j 4"
+                      -- parallel build
                     ]
         depArgs = [ "install", p
                   , "--only-dependencies"
@@ -81,7 +83,7 @@ buildPkg npkgs i p = do
     rmScratchDir p
 
   where
-    toFile f strs = liftIO $ appendFile f (concat strs)
+    toFile f strs = liftIO $ appendFile f (unlines strs)
 
 -- | Find out what would happen if we installed the package. Running
 -- cabal-install in dry-run mode may tell us:
@@ -101,8 +103,8 @@ statPkg npkgs i pkg = do
         logName     = name </> "logs.stats" </> pkg <.> "log"
         resultName  = name </> "logs.stats" </> pkg <.> "result"
         args        = basicFlags ++ fs ++
-                          [ "install", "--dry-run", "--reinstall", pkg
-                          , "--build-summary=" ++ summaryName
+                          [ "install", "--dry-run", "--reinstall", "--global"
+                          , pkg , "--build-summary=" ++ summaryName
                           , "--build-log=" ++ logName
                           ]
 
