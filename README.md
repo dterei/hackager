@@ -1,4 +1,4 @@
-# Hackager
+# Hackager [![Hackage version](https://img.shields.io/hackage/v/hackager.svg?style=flat)](https://hackage.haskell.org/package/hackager) [![Build Status](https://img.shields.io/travis/dterei/hackager.svg?style=flat)](https://travis-ci.org/dterei/hackager)
 
 Hackager is a tool to compile all of the Haskell Hackage package
 repository. This is useful for testing Haskell compilers.
