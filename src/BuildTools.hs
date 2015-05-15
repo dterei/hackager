@@ -19,8 +19,7 @@ import Utils
 runCabal :: [String] -> Hkg ExitCode
 runCabal args = do
     cabal <- getCabal
-    x <- liftIO $ rawSystem cabal args
-    return x
+    liftIO $ rawSystem cabal args
 
 -- | Run cabal returning the resulting output or error code
 -- * Bool: Treat any stderr output as evidence that cabal failed
@@ -28,15 +27,13 @@ runCabal args = do
 runCabalResults :: Bool -> [String] -> Hkg (Either (ExitCode, [String]) [String])
 runCabalResults errFail args = do
     cabal <- getCabal
-    r <- runCmdGetResults errFail cabal args
-    return r
+    runCmdGetResults errFail cabal args
 
 -- | Run ghc-pkg.
 runGhcPkg :: [String] -> Hkg ExitCode
 runGhcPkg args = do
     ghcPkg <- getGhcPkg
-    x <- liftIO $ rawSystem ghcPkg args
-    return x
+    liftIO $ rawSystem ghcPkg args
 
 data StdLine = Stdout String | Stderr String
 
@@ -77,7 +74,7 @@ runCmdGetResults errFail prog args = liftIO $ do
 
     ec <- waitForProcess ph
     ls <- takeMVar linesMVar
-    return $ case (ec, errFail && (any isStderr ls)) of
+    return $ case (ec, errFail && any isStderr ls) of
                 (ExitSuccess, False) -> Right $ map stripResultLine ls
                 _                    -> Left (ec, map mkResultLine ls)
 

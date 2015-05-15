@@ -17,7 +17,7 @@ import Utils
 
 -- | Run the reporting tool.
 report :: [String] -> IO ()
-report args = do
+report args =
     case args of
         [name1, name2] -> generate name1 name2
         ["--help"    ] -> reportHelp ExitSuccess
@@ -45,9 +45,9 @@ generate name1 name2 = do
 
     -- check valid input and outputs
     n1exists <- doesDirectoryExist name1
-    when (not n1exists) $ die ("'" ++ name1 ++ "' doesn't exists")
+    unless n1exists $ die ("'" ++ name1 ++ "' doesn't exists")
     n2exists <- doesDirectoryExist name2
-    when (not n2exists) $ die ("'" ++ name2 ++ "' doesn't exists")
+    unless n2exists $ die ("'" ++ name2 ++ "' doesn't exists")
     exists <- doesDirectoryExist compName
     when exists $ die ("The directoy '" ++ compName ++
         "' already exists, won't overwrite")

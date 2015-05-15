@@ -37,7 +37,7 @@ swap (x, y) = (y, x)
 showTable :: [Int -> String -> String] -> [[String]] -> [String]
 showTable padders xss =
     let lengths = map (maximum . map length) $ transpose xss
-    in map (concat . intersperse " " . zipWith3 id padders lengths) xss
+    in map (unwords . zipWith3 id padders lengths) xss
 
 -- | Pad the string with spaces before it.
 lpad :: Int -> String -> String

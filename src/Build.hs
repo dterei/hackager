@@ -134,7 +134,7 @@ statPkg npkgs i pkg = do
             addNotInstallablePackage pkg
             info $ "===> " ++ pkg ++ " is not installable, skipping!"
             when (notUpdated resultsLines) $
-                die ("===> Errror: You need to run 'cabal update' first!")
+                die "===> Errror: You need to run 'cabal update' first!"
 
         Right ls -> do
             let resultsLines = "SUCCEEDED" : ls
@@ -158,10 +158,7 @@ statPkg npkgs i pkg = do
                         addFailPackage pkg
 
   where
-    notUpdated []       = False
-    notUpdated (x : xs) = if "Stderr: Run 'cabal update'" `isPrefixOf` x
-                            then True
-                            else notUpdated xs
+    notUpdated = any (isPrefixOf "Stderr: Run 'cabal update'")
 
     listHeaderPrefix = "In order, the following would be installed"
     noPackagesPrefix = "No packages to be installed."

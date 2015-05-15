@@ -119,9 +119,9 @@ setExecutable getx setx name = do
 checkExecutable :: String -> String -> Hkg ()
 checkExecutable f prog = do
     b <- liftIO $ doesFileExist f
-    when (not b) $ badflag $ prog ++ " executable doesn't exist"
+    unless b $ badflag $ prog ++ " executable doesn't exist"
     p <- liftIO $ getPermissions f
-    when (not $ executable p) $ badflag $ prog ++ " file is not executable"
+    unless (executable p) $ badflag $ prog ++ " file is not executable"
 
 -- | Make sure a flag hasn't been set before
 checkNotSet :: Hkg [a] -> String -> Hkg ()

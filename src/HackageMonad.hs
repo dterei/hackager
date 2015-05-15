@@ -78,7 +78,7 @@ startState = do
     bfpkgs <- newMVar Set.empty
     bdpkgs <- newMVar Set.empty
     iolock <- newMVar ()
-    return $ HkgState {
+    return HkgState {
         st_dir                     = "",
         st_cabal                   = "",
         st_ghc                     = "",
@@ -238,11 +238,10 @@ dumpStats n = do
     fpkgs <- readMVar $ st_failPackages st
     count <- readMVar $ st_installCounts st
 
-    let fullHistogram = reverse $ sort $ map swap
-                      $ Map.assocs count
+    let fullHistogram = sortBy (flip compare) (map swap $ Map.assocs count)
         (manyHistogram, fewHistogram) = span ((>= 10) . fst) fullHistogram
         total = sum $ map fst fullHistogram
-        summaryTable = [ ["Num packages"           , show $ n]              
+        summaryTable = [ ["Num packages"           , show n]              
                        , ["Installed packages"     , show $ Set.size ipkgs]
                        , ["Installable packages"   , show $ Set.size apkgs]
                        , ["Uninstallable packages" , show $ Set.size npkgs]

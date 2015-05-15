@@ -15,7 +15,7 @@ type Child = MVar ()
 -- | Fork a child and return an MVar that signals when the child is done.
 forkChild :: Hkg () -> Hkg Child
 forkChild hkg = do
-    mvar <- liftIO $ newEmptyMVar
+    mvar <- liftIO newEmptyMVar
     st <- get
     _ <- liftIO $ forkIO (evalStateT hkg st `finally` putMVar mvar ())
     return mvar

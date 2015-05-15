@@ -41,7 +41,7 @@ getAllHackage = do
     case m of
         Left (_, out) -> die $ "Failed to get package list: " ++ unlines out
         Right xs ->
-            let ls = map (takeWhile (' ' /=)) $ xs
+            let ls = map (takeWhile (' ' /=)) xs
                 ps = uniq $ filter (not . null) ls
             in return ps
 
@@ -79,7 +79,7 @@ builder pkgFun n mpkgs = go
     go = do
         pkgs <- liftIO $ takeMVar mpkgs
         case pkgs of
-            []            -> liftIO (putMVar mpkgs []) >> return ()
+            []            -> liftIO $ putMVar mpkgs []
             ((i, p) : ps) -> do
                 liftIO $ putMVar mpkgs ps
                 pkgFun n i p
