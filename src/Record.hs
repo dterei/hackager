@@ -29,9 +29,9 @@ recordST args = do
         _ -> do
             processArgs args
             ps <- getPkgs
-            setupDir
+            setupBuildDir
             ps' <- case ps of
-                    [] -> getPackages
+                    [] -> getAllHackage
                     _  -> return ps
             tryBuildingPackages ps'
 

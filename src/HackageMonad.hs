@@ -5,7 +5,7 @@ module HackageMonad (
 
         getTempPackageConf, getScratchDir, rmScratchDir, rmTempDir,
 
-        setName, getName,
+        setRunPath, getRunPath,
         getCabal, setCabal, getGhc, setGhc, getGhcPkg, setGhcPkg,
         getDepFlags, setDepFlags, getPkgFlags, setPkgFlags, addPkg, getPkgs,
         setThreads, getThreads,
@@ -14,9 +14,9 @@ module HackageMonad (
         addNotInstallablePackage, addFailPackage, getInstallablePackages,
         buildSucceeded, buildFailed, buildDepsFailed,
 
-        getIOLock, releaseIOLock,
+        dumpStats, dumpResults,
 
-        dumpStats, dumpResults
+        info, warn, die
     ) where
 
 import Control.Concurrent (MVar, newMVar)
@@ -30,6 +30,8 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import System.Directory
 import System.FilePath
+import System.Exit (exitWith, ExitCode(..))
+import System.IO
 
 import Utils
 
@@ -101,20 +103,19 @@ startState = do
 ------------------------------------------------
 -- Helpers
 
-setName :: FilePath -> Hkg ()
-setName name = do
+setRunPath :: FilePath -> Hkg ()
+setRunPath name = do
     dir <- liftIO getCurrentDirectory
     modify $ \st -> st { st_name = name, st_dir = dir </> name }
 
-getName :: Hkg FilePath
-getName = get >>= \st -> return $ st_name st
+getRunPath :: Hkg FilePath
+getRunPath = get >>= \st -> return $ st_name st
 
 getDir :: Hkg FilePath
 getDir = get >>= \st -> return $ st_dir st
 
 getTempPackageConf :: PkgName -> Hkg FilePath
-getTempPackageConf p = getDir >>= \dir -> return
-    $ dir </> "scratch" </> p <.> "package.conf"
+getTempPackageConf p = (<.> "package.conf") <$> getScratchDir p
 
 getScratchDir :: PkgName -> Hkg FilePath
 getScratchDir p = getDir >>= \dir -> return $ dir </> "scratch" </> p
@@ -235,17 +236,6 @@ buildDepsFailed pkg = do
     s <- takeMVar $ st_buildDepFailurePackages st
     putMVar (st_buildDepFailurePackages st) $ Set.insert pkg s
 
-getIOLock :: Hkg ()
-getIOLock = do
-    st <- get
-    _ <- takeMVar $ st_iolock st
-    return ()
-
-releaseIOLock :: Hkg ()
-releaseIOLock = do
-    st <- get
-    putMVar (st_iolock st) ()
-
 dumpStats :: Int -> Hkg ()
 dumpStats n = do
     st <- get
@@ -267,7 +257,7 @@ dumpStats n = do
                        , ["Total reinstallations"  , show total]
                        ]
 
-    name <- getName
+    name <- getRunPath
     liftIO $ do
         writeFile (name </> "stats.full")
                   (unlines $ showCompleteHistogram fullHistogram)
@@ -324,4 +314,29 @@ putMVar m v = liftIO $ C.putMVar m v
 
 readMVar :: MVar a -> Hkg a
 readMVar m = liftIO $ C.readMVar m
+
+-- | Print message to stdout.
+info :: String -> Hkg ()
+info msg = do
+    l <- st_iolock <$> get
+    void $ takeMVar l
+    liftIO (putStrLn msg)
+    putMVar l ()
+
+-- | Print message to stderr.
+warn :: String -> Hkg ()
+warn msg = do
+    l <- st_iolock <$> get
+    void $ takeMVar l
+    liftIO $ hPutStrLn stderr msg
+    putMVar l ()
+
+-- | Exit with error message.
+die :: String -> Hkg a
+die err = do
+    l <- st_iolock <$> get
+    void $ takeMVar l
+    liftIO $ hPutStrLn stderr err
+    putMVar l ()
+    liftIO $ exitWith (ExitFailure 1)
 

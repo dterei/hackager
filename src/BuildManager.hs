@@ -1,21 +1,37 @@
 -- | Handle building a set of packages (usually all of Hackage)
 module BuildManager (
-        getPackages,
+        setupBuildDir,
+        getAllHackage,
         tryBuildingPackages
     ) where
 
 import Control.Concurrent
 import Control.Monad
 import Control.Monad.State
+import System.Directory
+import System.FilePath
 
 import Build
 import BuildTools
 import HackageMonad
+import Parallel
 import Utils
 
+-- | Setup the needed directory structure.
+setupBuildDir:: Hkg ()
+setupBuildDir = do
+    rpath <- getRunPath
+    exists <- liftIO $ doesDirectoryExist rpath
+    if exists
+        then die (show rpath ++ " already exists, not overwriting")
+        else liftIO $ do
+            createDirectory rpath
+            createDirectory (rpath </> "logs.stats")
+            createDirectory (rpath </> "logs.build")
+
 -- | Get a list of all packages on hackage.
-getPackages :: Hkg [PkgName]
-getPackages = do
+getAllHackage :: Hkg [PkgName]
+getAllHackage = do
     info "===> Grabbing a list of all packages on hackage..."
     m <- runCabalResults False ["list", "--simple-output", "-v0"]
     -- m: abc 0.0.1
@@ -37,10 +53,10 @@ tryBuildingPackages ps = do
     info $ "===> Testing against " ++ show n ++ " packages..."
     runOnAllPkgs ps statPkg
     dumpStats n
-    psAll    <- getInstallablePackages
+    psAll <- getInstallablePackages
     runOnAllPkgs psAll buildPkg
     dumpResults
-    rmTempDir
+    -- rmTempDir
     info $ "===> Hackager finished! (" ++ show n ++ " packages tested)"
 
 -- | Run in parallel a PkgProcessor function over the given list

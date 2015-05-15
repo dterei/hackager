@@ -1,8 +1,5 @@
--- | Various tools and utility functions to do wtih building.
+-- | Wrappers to run various build tools needed.
 module BuildTools (
-        die, info, warn,
-        Child, forkChild, waitForChildren,
-        setupDir, initialisePackageConf,
         runCabal, runCabalResults, runGhcPkg
     ) where
 
@@ -17,62 +14,6 @@ import System.Process
 
 import HackageMonad
 import Utils
-
--- | Print message to stdout.
-info :: String -> Hkg ()
-info msg = getIOLock >> liftIO (putStrLn msg) >> releaseIOLock
-
--- | Print message to stderr.
-warn :: String -> Hkg ()
-warn msg = getIOLock >> liftIO (hPutStrLn stderr msg) >> releaseIOLock
-
--- | Exit with error message.
-die :: String -> Hkg a
-die err = do
-    getIOLock
-    liftIO $ hPutStrLn stderr err
-    releaseIOLock
-    liftIO $ exitWith (ExitFailure 1)
-
--- | Children process signal
-type Child = MVar ()
-
--- | Fork a child and return an MVar that singals when the child is done.
-forkChild :: Hkg () -> Hkg Child
-forkChild hkg = do
-    mvar <- liftIO $ newEmptyMVar
-    st <- get
-    _ <- liftIO $ forkIO (evalStateT hkg st `finally` putMVar mvar ())
-    return mvar
-
--- | Wait on a list of children to finish processing
-waitForChildren :: [Child] -> Hkg ()
-waitForChildren []                 = return ()
-waitForChildren (child : children) = do
-    liftIO $ takeMVar child
-    waitForChildren children
-
--- | Setup the needed directory structure
-setupDir:: Hkg ()
-setupDir = do
-    name <- getName
-    exists <- liftIO $ doesDirectoryExist name
-    if exists
-        then die (show name ++ " already exists, not overwriting")
-        else liftIO $ do
-            createDirectory name
-            createDirectory (name </> "logs.stats")
-            createDirectory (name </> "logs.build")
-
--- | Setup a package database
-initialisePackageConf :: FilePath -> Hkg ()
-initialisePackageConf fp = do
-    liftIO . ignoreException $ removeFile fp
-    liftIO . ignoreException $ removeDirectoryRecursive fp
-    x <- runGhcPkg ["init", fp]
-    case x of
-        ExitSuccess -> return ()
-        _ -> die ("Initialising package database in " ++ show fp ++ " failed")
 
 -- | Run cabal.
 runCabal :: [String] -> Hkg ExitCode

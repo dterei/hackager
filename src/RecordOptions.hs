@@ -48,11 +48,11 @@ processArgs args             = parsePackages args >> validateFlags
 -- | Parse an individual option flag
 processOpt :: String -> String -> Hkg ()
 processOpt "o" name = do
-    checkNotSet getName "output directory is already set"
+    checkNotSet getRunPath "output directory is already set"
     checkNotOption name "the output directory is invalid"
     exists <- liftIO $ doesDirectoryExist name
     when exists $ die "The specified output directory already exists"
-    setName name
+    setRunPath name
 
 processOpt "c" cabal = do
     checkNotSet getCabal "cabal program is already set"
@@ -99,7 +99,7 @@ parsePackages (x:xs) = do
 -- | Validate all the flags needed have been set and are valid
 validateFlags :: Hkg ()
 validateFlags = do
-    n <- getName
+    n <- getRunPath
     when (n == "") $ badflag "output directory not set"
     setExecutable getCabal setCabal "cabal"
     setExecutable getGhc setGhc "ghc"

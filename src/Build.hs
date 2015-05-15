@@ -11,10 +11,21 @@ import Distribution.Package
 import Distribution.Text
 import System.Directory
 import System.FilePath
+import System.Exit (ExitCode(..))
 
 import BuildTools
 import HackageMonad
 import Utils
+
+-- | Setup a package database.
+initialisePackageConf :: FilePath -> Hkg ()
+initialisePackageConf fp = do
+    liftIO . ignoreException $ removeFile fp
+    liftIO . ignoreException $ removeDirectoryRecursive fp
+    x <- runGhcPkg ["init", fp]
+    case x of
+        ExitSuccess -> return ()
+        _ -> die ("Initialising package database in " ++ show fp ++ " failed")
 
 -- | Type of a function that processes packages (and can be parallelized)
 type PkgProcessor = Int -> Int -> PkgName -> Hkg ()
@@ -31,13 +42,13 @@ buildPkg npkgs i p = do
     scratchDir <- getScratchDir p
     liftIO . ignoreException $ removeDirectoryRecursive scratchDir
 
-    name         <- getName
+    rpath        <- getRunPath
     depFlags     <- getDepFlags
     pkgFlags     <- getPkgFlags
     basicFlags   <- getBasicCabalFlags
 
-    let cabalLog = name </> "logs.build" </> p <.> "cabal.log"
-        deplog   = name </> "logs.build" </> p <.> "depends.log"
+    let cabalLog = rpath </> "logs.build" </> p <.> "cabal.log"
+        deplog   = rpath </> "logs.build" </> p <.> "depends.log"
         comFlags = basicFlags ++
                     [ "--prefix=" ++ scratchDir
                       -- This is the package database that we
@@ -61,8 +72,8 @@ buildPkg npkgs i p = do
     xDeps <- runCabalResults False depArgs
     case xDeps of
         Right _ -> do
-            let summaryName = name </> "logs.build" </> p <.> "summary"
-                logName     = name </> "logs.build" </> p <.> "log"
+            let summaryName = rpath </> "logs.build" </> p <.> "summary"
+                logName     = rpath </> "logs.build" </> p <.> "log"
                 pkgArgs     = [ "install", p
                               , "--build-summary=" ++ summaryName
                               , "--build-log=" ++ logName
@@ -80,7 +91,7 @@ buildPkg npkgs i p = do
                          buildDepsFailed p
 
     -- clean up
-    rmScratchDir p
+    -- rmScratchDir p
 
   where
     toFile f strs = liftIO $ appendFile f (unlines strs)
@@ -96,13 +107,15 @@ statPkg :: PkgProcessor
 statPkg npkgs i pkg = do
     info $ "===> Getting stats for: " ++ pkg ++ " (" ++ show i ++ " of "
             ++ show npkgs ++ ")"
-    name <- getName
+
+    rpath      <- getRunPath
     basicFlags <- getBasicCabalFlags
-    fs   <- getPkgFlags
-    let summaryName = name </> "logs.stats" </> pkg <.> "summary"
-        logName     = name </> "logs.stats" </> pkg <.> "log"
-        resultName  = name </> "logs.stats" </> pkg <.> "result"
-        args        = basicFlags ++ fs ++
+    pkgFlags   <- getPkgFlags
+
+    let summaryName = rpath </> "logs.stats" </> pkg <.> "summary"
+        logName     = rpath </> "logs.stats" </> pkg <.> "log"
+        resultName  = rpath </> "logs.stats" </> pkg <.> "result"
+        args        = basicFlags ++ pkgFlags ++
                           [ "install", "--dry-run", "--reinstall", "--global"
                           , pkg , "--build-summary=" ++ summaryName
                           , "--build-log=" ++ logName
