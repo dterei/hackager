@@ -10,7 +10,7 @@ import Control.Concurrent
 import Control.Monad.State
 import Control.Exception
 import System.Directory
-import System.Exit
+import System.Exit (exitWith, ExitCode(..))
 import System.FilePath
 import System.IO
 import System.Process

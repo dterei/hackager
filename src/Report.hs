@@ -8,7 +8,7 @@ import Control.Monad
 import Data.Set (Set)
 import qualified Data.Set as Set
 import System.Directory
-import System.Exit
+import System.Exit (exitWith, ExitCode(..))
 import System.FilePath
 import System.IO
 

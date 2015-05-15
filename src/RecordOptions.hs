@@ -7,7 +7,7 @@ module RecordOptions (
 import Control.Monad.State
 import Data.Char (isDigit)
 import System.Directory
-import System.Exit
+import System.Exit (exitWith, ExitCode(..))
 import System.IO
 
 import BuildTools
