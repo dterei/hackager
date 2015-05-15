@@ -3,7 +3,7 @@
 module HackageMonad (
         PkgName, Hkg, HkgState, startState,
 
-        getTempPackageConf, getScratchDir, rmScratchDir, rmTempDir,
+        getTempPackageConf, getScratchDir, rmScratchDir, rmAllScratch,
 
         setRunPath, getRunPath,
         getCabal, setCabal, getGhc, setGhc, getGhcPkg, setGhcPkg,
@@ -42,7 +42,6 @@ type Hkg = StateT HkgState IO
 -- | The state of Hackager
 data HkgState = HkgState {
         -- These are set based on the command line flags
-        st_name     :: FilePath,
         st_dir      :: FilePath,
         st_cabal    :: FilePath,
         st_ghc      :: FilePath,
@@ -80,7 +79,6 @@ startState = do
     bdpkgs <- newMVar Set.empty
     iolock <- newMVar ()
     return $ HkgState {
-        st_name                    = "",
         st_dir                     = "",
         st_cabal                   = "",
         st_ghc                     = "",
@@ -106,74 +104,69 @@ startState = do
 setRunPath :: FilePath -> Hkg ()
 setRunPath name = do
     dir <- liftIO getCurrentDirectory
-    modify $ \st -> st { st_name = name, st_dir = dir </> name }
+    modify $ \st -> st { st_dir = dir </> name }
 
 getRunPath :: Hkg FilePath
-getRunPath = get >>= \st -> return $ st_name st
-
-getDir :: Hkg FilePath
-getDir = get >>= \st -> return $ st_dir st
+getRunPath = gets st_dir
 
 getTempPackageConf :: PkgName -> Hkg FilePath
 getTempPackageConf p = (<.> "package.conf") <$> getScratchDir p
 
 getScratchDir :: PkgName -> Hkg FilePath
-getScratchDir p = getDir >>= \dir -> return $ dir </> "scratch" </> p
+getScratchDir p = (</> "scratch" </> p) <$> getRunPath
 
 rmScratchDir :: PkgName -> Hkg ()
 rmScratchDir p = do
-    dir <- getDir
+    dir <- getRunPath
     liftIO . ignoreException $
         removeDirectoryRecursive (dir </> "scratch" </> p)
 
-rmTempDir :: Hkg ()
-rmTempDir = do
-    dir <- getDir
+rmAllScratch :: Hkg ()
+rmAllScratch = do
+    dir <- getRunPath
     liftIO . ignoreException $ removeDirectoryRecursive (dir </> "scratch")
 
 setCabal :: FilePath -> Hkg ()
 setCabal ci = modify $ \st -> st { st_cabal = ci }
 
 getCabal :: Hkg FilePath
-getCabal = get >>= \st -> return $ st_cabal st
+getCabal = gets st_cabal
 
 setGhc :: FilePath -> Hkg ()
 setGhc ghc = modify $ \st -> st { st_ghc = ghc }
 
 getGhc :: Hkg FilePath
-getGhc = get >>= \st -> return $ st_ghc st
+getGhc = gets st_ghc
 
 setGhcPkg :: FilePath -> Hkg ()
-setGhcPkg ghcPkg = modify $ \st -> st {st_ghcPkg = ghcPkg }
+setGhcPkg ghcPkg = modify $ \st -> st { st_ghcPkg = ghcPkg }
 
 getGhcPkg :: Hkg FilePath
-getGhcPkg = get >>= \st -> return $ st_ghcPkg st
+getGhcPkg = gets st_ghcPkg
 
 setDepFlags :: String -> Hkg ()
 setDepFlags depFlags = modify $ \st -> st { st_depFlags = parseFlags depFlags }
 
 getDepFlags :: Hkg [String]
-getDepFlags = get >>= \st -> return $ st_depFlags st
+getDepFlags = gets st_depFlags
 
 setPkgFlags :: String -> Hkg ()
 setPkgFlags pkgFlags = modify $ \st -> st { st_pkgFlags = parseFlags pkgFlags }
 
 getPkgFlags :: Hkg [String]
-getPkgFlags = get >>= \st -> return $ st_pkgFlags st
+getPkgFlags = gets st_pkgFlags
 
 addPkg :: String -> Hkg ()
-addPkg p = modify $ \st -> st {st_pkgs = Set.insert p (st_pkgs st) }
+addPkg p = modify $ \st -> st { st_pkgs = Set.insert p (st_pkgs st) }
 
 getPkgs :: Hkg [String]
-getPkgs = do
-    st <- get
-    return $ Set.toList (st_pkgs st)
+getPkgs = gets $ Set.toList . st_pkgs
 
 setThreads :: Int -> Hkg ()
 setThreads n = modify $ \st -> st { st_threads = n }
 
 getThreads :: Hkg Int
-getThreads = get >>= \st -> return $ st_threads st
+getThreads = gets st_threads
 
 parseFlags :: String -> [String]
 parseFlags str =
@@ -298,12 +291,13 @@ dumpResults = do
     bpkgs <- readMVar $ st_buildablePackages st
     fpkgs <- readMVar $ st_buildFailurePackages st
     dpkgs <- readMVar $ st_buildDepFailurePackages st
+    rpath <- getRunPath
 
-    liftIO $ writeFile (st_name st </> "buildable")
+    liftIO $ writeFile (rpath </> "buildable")
                        (unlines $ Set.toList bpkgs)
-    liftIO $ writeFile (st_name st </> "buildFailed")
+    liftIO $ writeFile (rpath </> "buildFailed")
                        (unlines $ Set.toList fpkgs)
-    liftIO $ writeFile (st_name st </> "buildDepsFailed")
+    liftIO $ writeFile (rpath </> "buildDepsFailed")
                        (unlines $ Set.toList dpkgs)
 
 takeMVar :: MVar a -> Hkg a

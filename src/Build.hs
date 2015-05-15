@@ -42,10 +42,10 @@ buildPkg npkgs i p = do
     scratchDir <- getScratchDir p
     liftIO . ignoreException $ removeDirectoryRecursive scratchDir
 
-    rpath        <- getRunPath
-    depFlags     <- getDepFlags
-    pkgFlags     <- getPkgFlags
-    basicFlags   <- getBasicCabalFlags
+    rpath      <- getRunPath
+    depFlags   <- getDepFlags
+    pkgFlags   <- getPkgFlags
+    basicFlags <- getBasicCabalFlags
 
     let cabalLog = rpath </> "logs.build" </> p <.> "cabal.log"
         deplog   = rpath </> "logs.build" </> p <.> "depends.log"
@@ -174,7 +174,7 @@ statPkg npkgs i pkg = do
 -- | Get the default cabal flags to use.
 getBasicCabalFlags :: Hkg [String]
 getBasicCabalFlags = do
-    ghc <- getGhc
+    ghc    <- getGhc
     ghcPkg <- getGhcPkg
     return [ "--remote-build-reporting=none"
            , "--ghc"

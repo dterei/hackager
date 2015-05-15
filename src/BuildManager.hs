@@ -56,7 +56,7 @@ tryBuildingPackages ps = do
     psAll <- getInstallablePackages
     runOnAllPkgs psAll buildPkg
     dumpResults
-    -- rmTempDir
+    -- rmAllScratch
     info $ "===> Hackager finished! (" ++ show n ++ " packages tested)"
 
 -- | Run in parallel a PkgProcessor function over the given list

@@ -12,7 +12,7 @@ import HackageMonad
 -- | Children process signal
 type Child = MVar ()
 
--- | Fork a child and return an MVar that singals when the child is done.
+-- | Fork a child and return an MVar that signals when the child is done.
 forkChild :: Hkg () -> Hkg Child
 forkChild hkg = do
     mvar <- liftIO $ newEmptyMVar
