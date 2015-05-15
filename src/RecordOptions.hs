@@ -10,7 +10,6 @@ import System.Directory
 import System.Exit (exitWith, ExitCode(..))
 import System.IO
 
-import BuildTools
 import HackageMonad
 
 -- | Print usage information and exit

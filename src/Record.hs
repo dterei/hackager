@@ -9,7 +9,6 @@ import System.Exit
 import System.IO
 
 import BuildManager
-import BuildTools
 import HackageMonad
 import RecordOptions
 

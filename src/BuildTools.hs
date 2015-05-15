@@ -6,9 +6,7 @@ module BuildTools (
 import Control.Concurrent
 import Control.Monad.State
 import Control.Exception
-import System.Directory
-import System.Exit (exitWith, ExitCode(..))
-import System.FilePath
+import System.Exit (ExitCode(..))
 import System.IO
 import System.Process
 
