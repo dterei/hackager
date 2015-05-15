@@ -60,13 +60,15 @@ buildPkg npkgs i p = do
                       -- register into again:
                     , "--ghc-pkg-option=--package-conf=" ++ tmpPackageConf
                       -- Only we want to display info to the user
-                    , "-j 4"
-                      -- parallel build
                     ]
         depArgs = [ "install", p
                   , "--only-dependencies"
                   , "--build-log=" ++ deplog
                   ] ++ comFlags ++ depFlags
+
+    -- touch log files
+    liftIO $ writeFile deplog ""
+    liftIO $ writeFile cabalLog ""
 
     -- try installing package dependencies
     xDeps <- runCabalResults False depArgs
@@ -173,9 +175,10 @@ getBasicCabalFlags :: Hkg [String]
 getBasicCabalFlags = do
     ghc    <- getGhc
     ghcPkg <- getGhcPkg
-    return [ "--remote-build-reporting=none"
-           , "--ghc"
-           , "--with-ghc=" ++ ghc
-           , "--with-ghc-pkg=" ++ ghcPkg
-           ]
+    cFlags <- getCabalFlags
+    return $ [ "--remote-build-reporting=none"
+             , "--ghc"
+             , "--with-ghc=" ++ ghc
+             , "--with-ghc-pkg=" ++ ghcPkg
+             ] ++ cFlags
 

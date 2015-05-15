@@ -32,7 +32,7 @@ Executable hackager
                    Report
                    Utils
     HS-Source-Dirs: src
-    Ghc-Options: -threaded
+    Ghc-Options: -threaded -Wall
     Build-Depends: base        >= 2 && < 5,
                    Cabal,
                    containers,

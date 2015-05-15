@@ -5,9 +5,10 @@ module HackageMonad (
 
         getTempPackageConf, getScratchDir, rmScratchDir, rmAllScratch,
 
-        setRunPath, getRunPath,
-        getCabal, setCabal, getGhc, setGhc, getGhcPkg, setGhcPkg,
-        getDepFlags, setDepFlags, getPkgFlags, setPkgFlags, addPkg, getPkgs,
+        setRunPath, getRunPath, getCabal, setCabal, getGhc, setGhc, getGhcPkg,
+        setGhcPkg, getCabalFlags, setCabalFlags, getDepFlags, setDepFlags,
+        getPkgFlags, setPkgFlags, addPkg, getPkgs,
+
         setThreads, getThreads,
 
         addInstall, addInstalledPackage, addInstallablePackage,
@@ -46,6 +47,7 @@ data HkgState = HkgState {
         st_cabal    :: FilePath,
         st_ghc      :: FilePath,
         st_ghcPkg   :: FilePath,
+        st_cabFlags :: [String],
         st_depFlags :: [String],
         st_pkgFlags :: [String],
         st_threads  :: Int,
@@ -83,6 +85,7 @@ startState = do
         st_cabal                   = "",
         st_ghc                     = "",
         st_ghcPkg                  = "",
+        st_cabFlags                = [],
         st_depFlags                = [],
         st_pkgFlags                = [],
         st_threads                 = 1,
@@ -143,6 +146,12 @@ setGhcPkg ghcPkg = modify $ \st -> st { st_ghcPkg = ghcPkg }
 
 getGhcPkg :: Hkg FilePath
 getGhcPkg = gets st_ghcPkg
+
+setCabalFlags :: String -> Hkg ()
+setCabalFlags cf = modify $ \st -> st { st_cabFlags = parseFlags cf }
+
+getCabalFlags :: Hkg [String]
+getCabalFlags = gets st_cabFlags
 
 setDepFlags :: String -> Hkg ()
 setDepFlags depFlags = modify $ \st -> st { st_depFlags = parseFlags depFlags }

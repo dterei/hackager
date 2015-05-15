@@ -20,13 +20,14 @@ recordHelp exitCode = do
                     ExitFailure 1 -> putStrLn
                     ExitFailure _ -> hPutStrLn stderr
     mapM_ out
-        [ "usage: hackager record -o NAME [-c CABAL] [-g GHC] [-p GHC-PKG] [-d DEP-FLAGS]"
-        , "                       [-f PKG-FLAGS] [-n THREADS] [PKGS...]"
+        [ "usage: hackager record -o NAME [-c CABAL] [-g GHC] [-a CABAL-FLAGS] [-p GHC-PKG]"
+        , "                               [-d DEP-FLAGS] [-f PKG-FLAGS] [-n THREADS] [PKGS...]"
         , ""
         , "    NAME         A name by which the results of this hackager run will"
         , "                 be referred, e.g. \"ghc-6.12.1\""
         , "    CABAL        The path to the cabal program to use"
         , "    GHC          The path to the ghc program to use"
+        , "    CABAL-FLAGS  Flags to pass to cabal during building"
         , "    GHC-PKG      The path to the ghc-pkg program to use"
         , "    DEP-FLAGS    The flags to use when compiling dependencies of a package"
         , "                 e.g. \"--ghc-option=-XFoo\""
@@ -64,6 +65,10 @@ processOpt "g" ghc = do
     checkNotOption ghc "ghc program is invalid"
     checkExecutable ghc "ghc"
     setGhc ghc
+
+processOpt "a" cflags = do
+    checkNotSet getCabalFlags "cabal flags already set"
+    setCabalFlags cflags
 
 processOpt "p" ghcpkg = do
     checkNotSet getGhcPkg "ghc-pkg program is already set"
