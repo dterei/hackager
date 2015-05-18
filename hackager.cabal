@@ -5,8 +5,8 @@ Description:
     Hackager is a program for compiling the entirety of Hackage as a way of
     testing a Haskell compiler.
 Category:           Compiler, GHC, Testing
-Author:             The GHC Team, David Terei <dave.terei@gmail.com>
-Maintainer:         David Terei <dave.terei@gmail.com>
+Author:             The GHC Team, David Terei <code@davidterei.com>
+Maintainer:         David Terei <code@davidterei.com>
 Homepage:           https://github.com/dterei/Hackager
 Bug-Reports:        https://github.com/dterei/Hackager/issues
 License:            BSD3
@@ -14,7 +14,7 @@ License-File:       LICENSE
 Stability:          Stable
 
 Build-Type:         Simple
-Extra-Source-Files: README.md, TODO.md
+Extra-Source-Files: README.md, TODO.md, HACKING.md
 Cabal-Version:      >= 1.6
 
 Source-Repository head
@@ -27,6 +27,7 @@ Executable hackager
                    BuildManager
                    BuildTools
                    HackageMonad
+                   Parallel
                    Record
                    RecordOptions
                    Report
