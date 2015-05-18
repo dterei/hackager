@@ -6,6 +6,7 @@ module Build (
     ) where
 
 import Control.Monad.State
+import Data.Char (toUpper)
 import Data.List
 import Distribution.Package
 import Distribution.Text
@@ -47,8 +48,12 @@ buildPkg npkgs i p = do
     pkgFlags   <- getPkgFlags
     basicFlags <- getBasicCabalFlags
 
-    let cabalLog = rpath </> "logs.build" </> p <.> "cabal.log"
-        deplog   = rpath </> "logs.build" </> p <.> "depends.log"
+    let -- we may generate thousands of files, so group by package first letter
+        -- for easier browsing.
+        groupDir = rpath  </> "logs.build" </> [toUpper $ head p]
+        pkgPath  = groupDir </> p
+        cabalLog = pkgPath <.> "cabal.log"
+        deplog   = pkgPath </> "$pkgid.depends.log"
         comFlags = basicFlags ++
                     [ "--prefix=" ++ scratchDir
                       -- This is the package database that we
@@ -66,16 +71,15 @@ buildPkg npkgs i p = do
                   , "--build-log=" ++ deplog
                   ] ++ comFlags ++ depFlags
 
-    -- touch log files
-    liftIO $ writeFile deplog ""
-    liftIO $ writeFile cabalLog ""
+    -- create directory structure
+    liftIO $ createDirectory pkgPath
 
     -- try installing package dependencies
     xDeps <- runCabalResults False depArgs
     case xDeps of
         Right _ -> do
-            let summaryName = rpath </> "logs.build" </> p <.> "summary"
-                logName     = rpath </> "logs.build" </> p <.> "log"
+            let summaryName = pkgPath <.> "summary"
+                logName     = pkgPath <.> "log"
                 pkgArgs     = [ "install", p
                               , "--build-summary=" ++ summaryName
                               , "--build-log=" ++ logName
@@ -114,14 +118,14 @@ statPkg npkgs i pkg = do
     basicFlags <- getBasicCabalFlags
     pkgFlags   <- getPkgFlags
 
-    let summaryName = rpath </> "logs.stats" </> pkg <.> "summary"
-        logName     = rpath </> "logs.stats" </> pkg <.> "log"
-        resultName  = rpath </> "logs.stats" </> pkg <.> "result"
+    let resultDir   = rpath </> "logs.stats" </> [toUpper $ head pkg]
+        resultName  = resultDir </> pkg <.> "result"
         args        = basicFlags ++ pkgFlags ++
                           [ "install", "--dry-run", "--reinstall", "--global"
-                          , pkg , "--build-summary=" ++ summaryName
-                          , "--build-log=" ++ logName
-                          ]
+                          , pkg ]
+
+    -- create directory structure
+    liftIO $ createDirectory resultDir
 
     -- Ideally cabal would have written out some
     -- sort of log, but it seems not to do so in dry-run
