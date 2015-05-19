@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 -- | Monad for Hackage Test. Just a simple state passing monad with appropriate
 -- getter and setters.
 module HackageMonad (
@@ -24,6 +25,9 @@ import Control.Concurrent (MVar, newMVar)
 import qualified Control.Concurrent as C
 import Control.Monad.State
 import Data.Function
+#if __GLASGOW_HASKELL__ < 710
+import Data.Functor
+#endif
 import Data.List
 import Data.Map (Map)
 import qualified Data.Map as Map
