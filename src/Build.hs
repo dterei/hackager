@@ -72,6 +72,7 @@ buildPkg npkgs i p = do
                   ] ++ comFlags ++ depFlags
 
     -- create directory structure
+    liftIO $ ignoreException $ createDirectory groupDir
     liftIO $ createDirectory pkgPath
 
     -- try installing package dependencies
@@ -97,7 +98,7 @@ buildPkg npkgs i p = do
                          buildDepsFailed p
 
     -- clean up
-    -- rmScratchDir p
+    rmScratchDir p
 
   where
     toFile f strs = liftIO $ appendFile f (unlines strs)
@@ -125,7 +126,7 @@ statPkg npkgs i pkg = do
                           , pkg ]
 
     -- create directory structure
-    liftIO $ createDirectory resultDir
+    liftIO $ ignoreException $ createDirectory resultDir
 
     -- Ideally cabal would have written out some
     -- sort of log, but it seems not to do so in dry-run
@@ -149,7 +150,7 @@ statPkg npkgs i pkg = do
                 (_, _ : ls1) -> do
                     ls2 <- mapM mangleLine ls1
                     case reverse ls2 of
-                        thisP : otherPs | thisP == pkg -> do
+                        thisP : otherPs | toU thisP == toU pkg -> do
                             addInstallablePackage pkg
                             mapM_ addInstall otherPs
 
@@ -164,6 +165,7 @@ statPkg npkgs i pkg = do
                         addFailPackage pkg
 
   where
+    toU = map toUpper
     notUpdated = any (isPrefixOf "Stderr: Run 'cabal update'")
 
     listHeaderPrefix = "In order, the following would be installed"

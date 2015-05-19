@@ -42,7 +42,6 @@ data StdLine = Stdout String | Stderr String
 runCmdGetResults :: Bool -> FilePath -> [String]
                  -> Hkg (Either (ExitCode, [String]) [String])
 runCmdGetResults errFail prog args = liftIO $ do
-    putStrLn $ "Run Cabal: " ++ show args
     (hIn, hOut, hErr, ph) <- runInteractiveProcess prog args Nothing Nothing
     hClose hIn
     linesMVar <- newEmptyMVar
