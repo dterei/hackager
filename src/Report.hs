@@ -45,19 +45,19 @@ generate name1 name2 = do
 
     -- check valid input and outputs
     n1exists <- doesDirectoryExist name1
-    unless n1exists $ die ("'" ++ name1 ++ "' doesn't exists")
+    unless n1exists $ die $ "'" ++ name1 ++ "' doesn't exists"
     n2exists <- doesDirectoryExist name2
-    unless n2exists $ die ("'" ++ name2 ++ "' doesn't exists")
+    unless n2exists $ die $ "'" ++ name2 ++ "' doesn't exists"
     exists <- doesDirectoryExist compName
-    when exists $ die ("The directoy '" ++ compName ++
-        "' already exists, won't overwrite")
+    when exists $ die $ "The directoy '" ++ compName ++
+        "' already exists, won't overwrite"
 
-    ba1 <- readPkgList (name1 </> "buildable")
-    ba2 <- readPkgList (name2 </> "buildable")
-    bF1 <- readPkgList (name1 </> "buildFailed")
-    bF2 <- readPkgList (name2 </> "buildFailed")
-    dF1 <- readPkgList (name1 </> "buildDepsFailed")
-    dF2 <- readPkgList (name2 </> "buildDepsFailed")
+    ba1 <- readPkgList $ name1 </> "build.success"
+    ba2 <- readPkgList $ name2 </> "build.success"
+    bF1 <- readPkgList $ name1 </> "build.fail"
+    bF2 <- readPkgList $ name2 </> "build.fail"
+    dF1 <- readPkgList $ name1 </> "build.depfail"
+    dF2 <- readPkgList $ name2 </> "build.depfail"
 
     let all1 = ba1 `Set.union` bF1 `Set.union` dF1
         all2 = ba2 `Set.union` bF2 `Set.union` dF2
@@ -83,34 +83,35 @@ generate name1 name2 = do
         nt1_nt2 = nt1 `Set.intersection` nt2
 
         num s = show (Set.size s)
-        padders = [rpad,  rpad,           lpad,         lpad,           lpad,          lpad]
-        table =  [["",    "",             name1,        "",             "",            ""],
-                  ["",    "",             "Buildable",  "Build failed", "Deps failed", "Not tried"],
-                  [name2, "Buildable",    num ba1_ba2,  num bF1_ba2,    num dF1_ba2,   num nt1_ba2],
-                  ["",    "Build failed", num ba1_bF2,  num bF1_bF2,    num dF1_bF2,   num nt1_bF2],
-                  ["",    "Deps failed",  num ba1_dF2,  num bF1_dF2,    num dF1_dF2,   num nt1_dF2],
-                  ["",    "Not tried",    num ba1_nt2,  num bF1_nt2,    num dF1_nt2,   num nt1_nt2]]
+        num' s = num s ++ " "
+        padders = [rpad,  rpad,          lpad,         lpad,         lpad,           lpad]
+        table =  [["",    "",            name1,        "",           "",             ""],
+                  ["",    "",            "Built,",     "Failed,",    "Deps Failed,", "Not Tried"],
+                  [name2, "Built",       num' ba1_ba2, num' bF1_ba2, num' dF1_ba2,   num nt1_ba2],
+                  ["",    "Failed",      num' ba1_bF2, num' bF1_bF2, num' dF1_bF2,   num nt1_bF2],
+                  ["",    "Deps Failed", num' ba1_dF2, num' bF1_dF2, num' dF1_dF2,   num nt1_dF2],
+                  ["",    "Not Tried",   num' ba1_nt2, num' bF1_nt2, num' dF1_nt2,   num nt1_nt2]]
 
     createDirectory compName
     mapM_ (writeResultFile compName)
-        [ ("buildable-buildable"     , ba1_ba2)
-        , ("buildable-buildFailed"   , ba1_bF2)
-        , ("buildable-depsFailed"    , ba1_dF2)
-        , ("buildable-notTried"      , ba1_nt2)
-        , ("buildFailed-buildable"   , bF1_ba2)
-        , ("buildFailed-buildFailed" , bF1_bF2)
-        , ("buildFailed-depsFailed"  , bF1_dF2)
-        , ("buildFailed-notTried"    , bF1_nt2)
-        , ("depsFailed-buildable"    , dF1_ba2)
-        , ("depsFailed-buildFailed"  , dF1_bF2)
-        , ("depsFailed-depsFailed"   , dF1_dF2)
-        , ("depsFailed-notTried"     , dF1_nt2)
-        , ("notTried-buildable"      , nt1_ba2)
-        , ("notTried-buildFailed"    , nt1_bF2)
-        , ("notTried-depsFailed"     , nt1_dF2)
-        , ("notTried-notTried"       , nt1_nt2)
+        [ ("built-built"      , ba1_ba2)
+        , ("built-failed"     , ba1_bF2)
+        , ("built-depfail"    , ba1_dF2)
+        , ("built-nottried"   , ba1_nt2)
+        , ("fail-built"       , bF1_ba2)
+        , ("fail-failed"      , bF1_bF2)
+        , ("fail-depfail"     , bF1_dF2)
+        , ("fail-nottried"    , bF1_nt2)
+        , ("depfail-built"    , dF1_ba2)
+        , ("depfail-fail"     , dF1_bF2)
+        , ("depfail-depfail"  , dF1_dF2)
+        , ("depfail-nottried" , dF1_nt2)
+        , ("nottried-built"   , nt1_ba2)
+        , ("nottried-fail"    , nt1_bF2)
+        , ("nottried-depfail" , nt1_dF2)
+        , ("nottried-nottried", nt1_nt2)
         ]
-    writeFile (compName </> "summary") (unlines $ showTable padders table)
+    writeFile (compName </> "results") (unlines $ showTable padders table)
     mapM_ putStrLn $ showTable padders table
 
 -- | Write results to a file

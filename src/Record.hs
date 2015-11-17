@@ -27,10 +27,11 @@ recordST args = do
         ["--help"] -> liftIO $ recordHelp ExitSuccess
         _ -> do
             processArgs args
-            ps <- getPkgs
             setupBuildDir
-            ps' <- case ps of
+            ps1 <- getPkgs
+            ps2 <- case ps1 of
                     [] -> getAllHackage
-                    _  -> return ps
-            tryBuildingPackages ps'
+                    _  -> return ps1
+            ps3 <- filterPackages ps2
+            tryBuildingPackages ps3
 

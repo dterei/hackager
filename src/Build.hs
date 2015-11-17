@@ -152,24 +152,19 @@ statPkg npkgs i pkg = do
                     case reverse ls2 of
                         thisP : otherPs | toU thisP == toU pkg -> do
                             addInstallablePackage pkg
-                            mapM_ addInstall otherPs
+                            mapM_ addRevDepCounts otherPs
 
                         _ -> die ("Installing " ++ show pkg ++
                                   " doesn't end by installing it")
 
-                _ | any (noPackagesPrefix `isPrefixOf`) ls
-                  -> addInstalledPackage pkg
-
-                  | otherwise
-                  -> do warn $ "Don't understand result for " ++ show pkg
-                        addFailPackage pkg
+                _ -> do warn $ "Don't understand result for " ++ show pkg
+                        addErrorPackage pkg
 
   where
     toU = map toUpper
     notUpdated = any (isPrefixOf "Stderr: Run 'cabal update'")
 
     listHeaderPrefix = "In order, the following would be installed"
-    noPackagesPrefix = "No packages to be installed."
     mangleLine l = case simpleParse . takeWhile (/= ' ') $ l of
                        Nothing ->
                            die ("Unparseable line: " ++ show l)

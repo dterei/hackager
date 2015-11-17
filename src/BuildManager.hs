@@ -2,6 +2,7 @@
 module BuildManager (
         setupBuildDir,
         getAllHackage,
+        filterPackages,
         tryBuildingPackages
     ) where
 
@@ -44,7 +45,7 @@ getAllHackage = do
         Right xs ->
             let ls = map (takeWhile (' ' /=)) xs
                 ps = uniq $ filter (not . null) ls
-            in filterPackages ps
+            in return ps
 
 -- | Filter list of packages according to user specified regular expression.
 filterPackages :: [PkgName] -> Hkg [PkgName]

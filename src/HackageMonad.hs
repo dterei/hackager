@@ -20,8 +20,8 @@ module HackageMonad (
         setThreads, getThreads,
 
         -- stats (what packages do we think we can and can't try to build?)
-        addInstall, addInstalledPackage, addInstallablePackage,
-        addNotInstallablePackage, addFailPackage,
+        addInstallablePackage, addNotInstallablePackage, addErrorPackage,
+        addRevDepCounts,
         
         -- list of packages we've determined we can attempt to build
         getInstallablePackages,
@@ -74,10 +74,9 @@ data HkgState = HkgState {
         st_pkgs     :: Set PkgName,
 
         -- These are set by the stats-collection pass:
-        st_installedPackages      :: MVar (Set PkgName),
         st_installablePackages    :: MVar (Set PkgName),
         st_notInstallablePackages :: MVar (Set PkgName),
-        st_failPackages           :: MVar (Set PkgName),
+        st_errorPackages          :: MVar (Set PkgName),
         st_installCounts          :: MVar (Map PkgName Int),
 
         -- These are set by the installation pass:
@@ -91,7 +90,6 @@ data HkgState = HkgState {
 
 startState :: IO HkgState
 startState = do
-    ipkgs  <- newMVar Set.empty
     apkgs  <- newMVar Set.empty
     npkgs  <- newMVar Set.empty
     fpkgs  <- newMVar Set.empty
@@ -111,10 +109,9 @@ startState = do
         st_threads                 = 1,
         st_regex                   = "",
         st_pkgs                    = Set.empty,
-        st_installedPackages       = ipkgs,
         st_installablePackages     = apkgs,
         st_notInstallablePackages  = npkgs,
-        st_failPackages            = fpkgs,
+        st_errorPackages           = fpkgs,
         st_installCounts           = count,
         st_buildablePackages       = bbpkgs,
         st_buildFailurePackages    = bfpkgs,
@@ -211,18 +208,12 @@ parseFlags str =
         [(flags, "")] -> flags
         _             -> words str
 
-addInstall :: PkgName -> Hkg ()
-addInstall pn = do
+addRevDepCounts :: PkgName -> Hkg ()
+addRevDepCounts pn = do
     st <- get
     ics <- takeMVar $ st_installCounts st
     let ics' = Map.insertWith (+) pn 1 ics
     putMVar (st_installCounts st) ics'
-
-addInstalledPackage :: PkgName -> Hkg ()
-addInstalledPackage pkg = do
-    st <- get
-    s  <- takeMVar $ st_installedPackages st
-    putMVar (st_installedPackages st) $ Set.insert pkg s
 
 addInstallablePackage :: PkgName -> Hkg ()
 addInstallablePackage pkg = do
@@ -242,11 +233,11 @@ addNotInstallablePackage pkg = do
     s <- takeMVar $ st_notInstallablePackages st
     putMVar (st_notInstallablePackages st) $ Set.insert pkg s 
 
-addFailPackage :: PkgName -> Hkg ()
-addFailPackage pkg = do
+addErrorPackage :: PkgName -> Hkg ()
+addErrorPackage pkg = do
     st <- get
-    s <- takeMVar $ st_failPackages st
-    putMVar (st_failPackages st) $ Set.insert pkg s
+    s <- takeMVar $ st_errorPackages st
+    putMVar (st_errorPackages st) $ Set.insert pkg s
 
 buildSucceeded :: PkgName -> Hkg ()
 buildSucceeded pkg = do
@@ -269,43 +260,34 @@ buildDepsFailed pkg = do
 dumpStats :: Int -> Hkg ()
 dumpStats n = do
     st <- get
-    ipkgs <- readMVar $ st_installedPackages st
     apkgs <- readMVar $ st_installablePackages st
     npkgs <- readMVar $ st_notInstallablePackages st
-    fpkgs <- readMVar $ st_failPackages st
+    fpkgs <- readMVar $ st_errorPackages st
     count <- readMVar $ st_installCounts st
 
     let fullHistogram = sortBy (flip compare) (map swap $ Map.assocs count)
-        (manyHistogram, fewHistogram) = span ((>= 10) . fst) fullHistogram
-        total = sum $ map fst fullHistogram
-        summaryTable = [ ["Num packages"           , show n]              
-                       , ["Installed packages"     , show $ Set.size ipkgs]
-                       , ["Installable packages"   , show $ Set.size apkgs]
-                       , ["Uninstallable packages" , show $ Set.size npkgs]
-                       , ["Failed packages"        , show $ Set.size fpkgs]
-                       , ["Total reinstallations"  , show total]
+        total = Set.size apkgs + sum (map fst fullHistogram)
+        summaryTable = [ ["Num packages" , show n]              
+                       , ["Installable"  , show $ Set.size apkgs]
+                       , ["Uninstallable", show $ Set.size npkgs]
+                       , ["Errored"      , show $ Set.size fpkgs]
+                       , ["Installations", show total]
                        ]
 
-    name <- getRunPath
+    rpath <- getRunPath
     liftIO $ do
-        writeFile (name </> "stats.full")
-                  (unlines $ showCompleteHistogram fullHistogram)
-        writeFile (name </> "stats.many")
-                  (unlines $ showCompleteHistogram manyHistogram)
-        writeFile (name </> "stats.few")
-                  (unlines $ showSummaryHistogram fewHistogram)
-        writeFile (name </> "stats.summary")
+        writeFile (rpath </> "stats.summary")
                   (unlines $ showTable [rpad, rpad] summaryTable)
-        writeFile (name </> "installed-packages")
-                  (unlines $ Set.toList ipkgs)
-        writeFile (name </> "installable-packages")
+        writeFile (rpath </> "stats.dependency-count")
+                  (unlines $ showCompleteHistogram fullHistogram)
+        writeFile (rpath </> "stats.dependency-histogram")
+                  (unlines $ showSummaryHistogram fullHistogram)
+        writeFile (rpath </> "packages.installable")
                   (unlines $ Set.toList apkgs)
-        writeFile (name </> "uninstallable-packages")
+        writeFile (rpath </> "packages.uninstallable")
                   (unlines $ Set.toList npkgs)
-        writeFile (name </> "fail-packages")
+        writeFile (rpath </> "packages.error")
                   (unlines $ Set.toList fpkgs)
-        writeFile (name </> "install-counts")
-                  (unlines $ map show $ Map.assocs count)
 
   where
     showCompleteHistogram hist = showTable [rpad, rpad]
@@ -317,8 +299,8 @@ dumpStats n = do
                         show $ length histogramRow]
                      | histogramRow <- hist' ]
         in showTable [rpad, rpad]
-                     (["Number of reinstallations",
-                       "Number of packages"] :
+                     (["Reverse Dependencies",
+                       "Number of Packages"] :
                       hist'')
 
 dumpResults :: Hkg ()
@@ -328,13 +310,20 @@ dumpResults = do
     fpkgs <- readMVar $ st_buildFailurePackages st
     dpkgs <- readMVar $ st_buildDepFailurePackages st
     rpath <- getRunPath
+    
+    let total = Set.size bpkgs + Set.size fpkgs + Set.size dpkgs
+        summaryTable = [ ["Attempted"  , show total]              
+                       , ["Succeeded"  , show $ Set.size bpkgs]
+                       , ["Failed"     , show $ Set.size fpkgs]
+                       , ["Deps Failed", show $ Set.size dpkgs]
+                       ]
 
-    liftIO $ writeFile (rpath </> "buildable")
-                       (unlines $ Set.toList bpkgs)
-    liftIO $ writeFile (rpath </> "buildFailed")
-                       (unlines $ Set.toList fpkgs)
-    liftIO $ writeFile (rpath </> "buildDepsFailed")
-                       (unlines $ Set.toList dpkgs)
+    liftIO $ do
+      writeFile (rpath </> "build.summary")
+                (unlines $ showTable [rpad, rpad] summaryTable)
+      writeFile (rpath </> "build.success") (unlines $ Set.toList bpkgs)
+      writeFile (rpath </> "build.fail")    (unlines $ Set.toList fpkgs)
+      writeFile (rpath </> "build.depfail") (unlines $ Set.toList dpkgs)
 
 takeMVar :: MVar a -> Hkg a
 takeMVar m = liftIO $ C.takeMVar m

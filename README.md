@@ -1,9 +1,10 @@
 # Hackager [![Hackage version](https://img.shields.io/hackage/v/hackager.svg?style=flat)](https://hackage.haskell.org/package/hackager) [![Build Status](https://img.shields.io/travis/dterei/hackager.svg?style=flat)](https://travis-ci.org/dterei/hackager)
 
-Hackager is a tool to compile all of the Haskell Hackage package
-repository. This is useful for testing Haskell compilers.
+Hackager is a tool to compile all of the Haskell Hackage package repository.
+This is useful for testing Haskell compilers.
 
 ## Using
+
 Hackager consists of one tool that supports multiple commands.
 
 ''hackager'' is invoked with the following options:
@@ -38,52 +39,70 @@ usage: hackager record -o NAME [-c CABAL] [-g GHC] [-p GHC-PKG] [-d DEP-FLAGS]
                  hackage is built
 ~~~~
 
-For example, here is a run with GHC, no special options and using 4
-threads (note that this generally takes a long time, i.e. a few days):
+### Executing a run of Hackager
+
+Here is a run with GHC, no special options and using 4 threads (note that this
+generally takes a long time, i.e. a few days):
 
 ~~~ {.sh}
 $ hackager record -o normal -n 4
 ~~~~
 
-Then another run, this time using ''-XAlternativeLayoutRule'' to
-compile each package (but not the build dependencies of the package):
+This run has two parts. First, the 'stats' part, where Hackager checks which
+packages of the ones requested it believes it can build. Packages that can't be
+built are ones that we can't satisfy the dependencies for, usually due to the
+package itself or one of its dependencies not being compatible with the version
+of GHC in use. This produces files of the form `stats.*` in the output
+directory and should only take a few minutes.
+
+The second part consists of attempting to build every package (in isolation)
+that Hackager reported it could attempt to build from the first part. This
+takes hours to days (for all of Hackage), and stores results in files of the
+form `build.*`. Log files for the build results of each package are also saved
+under folders (with alphabetical grouping to make browsing easier).
+
+### Comparing Results of Two Runs
+
+After the first fun, execute a second run with the delta you wish. For example,
+this time using ''-XAlternativeLayoutRule'' to compile each package (but not
+the dependencies of the package):
 
 ~~~~ {.sh}
 $ hackager record -o altern -f "--ghc-option=-XAlternativeLayoutRule" -n 4
 ~~~~
 
-And finally a comparison of the results:
+Once done, you can compare the results of the two runs:
 
 ~~~~ {.sh}
 $ hackager report normal altern
 
                             normal
-                         Buildable Build failed Deps failed Not tried
-altern Buildable          628            0           0         0
-       Build failed        73          215           0         0
-       Deps failed          0            0         170         0
-       Not tried            0            0           0         0
+                     Built, Failed, Deps Failed, Not Tried
+altern Built           628       0            0          0
+       Failed           73     215            0          0
+       Deps Failed       0       0          170          0
+       Not Tried         0       0            0          0
 ~~~~
 
-These results mean that 73 packages became unbuildable when the
-alternative layout rule is used.
+These results mean that 73 packages became unbuildable when the alternative
+layout rule is used.
 
 ## File Output
 
 When looking at the files created by a single run of Hackager, the important
 one is `stats.summary`, which cotains the following fields:
 
-* ''Num packages'':           Number of packges we are testing.
-* ''Installed packages'':     Packages already installed, so skipping.
-* ''Installable packages'':   Packages we believe we can install (dependencies
-                              can be satistified).
-* ''Uninstallable packages'': Packages we don't know how to build (i.e., Cabal
-                              fails).
-* ''Failed packages'':        Packages Cabal claims can be built but we don't
-                              understand Cabal's output.
-* ''Total reinstallations'':  Total number of dependencies that need to be
-                              installed (and re-installed) to build requested
-                              packages.
+* ''Num packages'':   Number of packges we are testing.
+* ''Installable'':    Packages we believe we can install.
+* ''Uninstallable'':  Packages we can't build (i.e., wrong GHC version)
+* ''Errored '':       Packages Cabal claims can be built but we don't
+                      understand Cabal's output.
+* ''Installations'':  Total number of packages builds we will perform during
+                      the run.
+
+Hackager also produces a reverse dependency list for each package and a
+histogram of the reverse dependency count for pacakges, storing them in files
+of the form `stats.*`.
 
 ## Caution
 
@@ -108,3 +127,4 @@ Master [git repository](http://github.com/dterei/Hackager):
 ## Licensing
 
 This library is BSD-licensed.
+
