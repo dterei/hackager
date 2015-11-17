@@ -40,5 +40,6 @@ Executable hackager
                    directory,
                    filepath,
                    mtl,
-                   process
+                   process,
+                   regex-tdfa
 

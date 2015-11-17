@@ -10,6 +10,7 @@ import Control.Monad
 import Control.Monad.State
 import System.Directory
 import System.FilePath
+import Text.Regex.TDFA
 
 import Build
 import BuildTools
@@ -43,7 +44,17 @@ getAllHackage = do
         Right xs ->
             let ls = map (takeWhile (' ' /=)) xs
                 ps = uniq $ filter (not . null) ls
-            in return ps
+            in filterPackages ps
+
+-- | Filter list of packages according to user specified regular expression.
+filterPackages :: [PkgName] -> Hkg [PkgName]
+filterPackages pkgs = do
+    regex <- getRegex
+    if null regex
+      then return pkgs
+      else do
+        info $ "===> Using package name refex: " ++ regex
+        return $ filter (\p -> p =~ regex) pkgs
 
 -- | Loop over given packages and try to build each of them, recording the
 -- results.

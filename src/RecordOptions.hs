@@ -21,7 +21,8 @@ recordHelp exitCode = do
                     ExitFailure _ -> hPutStrLn stderr
     mapM_ out
         [ "usage: hackager record -o NAME [-c CABAL] [-g GHC] [-p GHC-PKG] [-a CABAL-FLAGS]"
-        , "                               [-d DEP-FLAGS] [-f PKG-FLAGS] [-n THREADS] [PKGS...]"
+        , "                               [-d DEP-FLAGS] [-f PKG-FLAGS] [-n THREADS]"
+        , "                               [-r SEARCH] [PKGS...]"
         , ""
         , "    NAME         A name by which the results of this hackager run will"
         , "                 be referred, e.g. \"ghc-6.12.1\""
@@ -35,6 +36,8 @@ recordHelp exitCode = do
         , "    PKG-FLAGS    The flags to use when compiling a package"
         , "                 e.g. -f [\"--ghc-option=-XFoo\",\"--ghc-option=-XBar\"]"
         , "    THREADS      Number of threads to use to build in parallel"
+        , "    SEARCH       A regular expression to use for selecting packages,"
+        , "                 when used, don't specify a package list"
         , "    PKGS         A list of packages to build. If not specified all of"
         , "                 hackage is built"
         ]
@@ -68,7 +71,7 @@ processOpt "g" ghc = do
     setGhc ghc
 
 processOpt "a" cflags = do
-    checkNotSet getCabalFlags "cabal flags already set"
+    checkNotSet getCabalFlags "cabal flag already set"
     setCabalFlags cflags
 
 processOpt "p" ghcpkg = do
@@ -78,11 +81,11 @@ processOpt "p" ghcpkg = do
     setGhcPkg ghcpkg
 
 processOpt "d" depflags = do
-    checkNotSet getDepFlags "dependency flags already set"
+    checkNotSet getDepFlags "dependency flag already set"
     setDepFlags depflags
 
 processOpt "f" pkgflags = do
-    checkNotSet getPkgFlags "package flags already set"
+    checkNotSet getPkgFlags "package flag already set"
     setPkgFlags pkgflags
 
 processOpt "n" threads = do
@@ -90,6 +93,10 @@ processOpt "n" threads = do
     case n of
         Just n' -> setThreads n'
         Nothing -> badflag "invalid thread number"
+
+processOpt "r" regex = do
+    checkNotSet getRegex "regex flag already set"
+    setRegex regex
 
 processOpt o _ = badflag $ "Unknown option '-" ++ o ++ "'"
 

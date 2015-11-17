@@ -8,7 +8,7 @@ module HackageMonad (
         -- configure build paths and tools
         setRunPath, getRunPath, getCabal, setCabal, getGhc, setGhc, getGhcPkg,
         setGhcPkg, getCabalFlags, setCabalFlags, getDepFlags, setDepFlags,
-        getPkgFlags, setPkgFlags,
+        getRegex, setRegex, getPkgFlags, setPkgFlags,
 
         -- setup and retrieve list of packages to test
         addPkg, getPkgs,
@@ -70,6 +70,7 @@ data HkgState = HkgState {
         st_depFlags :: [String],
         st_pkgFlags :: [String],
         st_threads  :: Int,
+        st_regex    :: String,
         st_pkgs     :: Set PkgName,
 
         -- These are set by the stats-collection pass:
@@ -108,6 +109,7 @@ startState = do
         st_depFlags                = [],
         st_pkgFlags                = [],
         st_threads                 = 1,
+        st_regex                   = "",
         st_pkgs                    = Set.empty,
         st_installedPackages       = ipkgs,
         st_installablePackages     = apkgs,
@@ -148,53 +150,60 @@ rmAllScratch = do
     dir <- getRunPath
     liftIO . ignoreException $ removeDirectoryRecursive (dir </> "scratch")
 
-setCabal :: FilePath -> Hkg ()
-setCabal ci = modify $ \st -> st { st_cabal = ci }
-
 getCabal :: Hkg FilePath
 getCabal = gets st_cabal
 
-setGhc :: FilePath -> Hkg ()
-setGhc ghc = modify $ \st -> st { st_ghc = ghc }
+setCabal :: FilePath -> Hkg ()
+setCabal ci = modify $ \st -> st { st_cabal = ci }
 
 getGhc :: Hkg FilePath
 getGhc = gets st_ghc
 
-setGhcPkg :: FilePath -> Hkg ()
-setGhcPkg ghcPkg = modify $ \st -> st { st_ghcPkg = ghcPkg }
+setGhc :: FilePath -> Hkg ()
+setGhc ghc = modify $ \st -> st { st_ghc = ghc }
 
 getGhcPkg :: Hkg FilePath
 getGhcPkg = gets st_ghcPkg
 
-setCabalFlags :: String -> Hkg ()
-setCabalFlags cf = modify $ \st -> st { st_cabFlags = parseFlags cf }
+setGhcPkg :: FilePath -> Hkg ()
+setGhcPkg ghcPkg = modify $ \st -> st { st_ghcPkg = ghcPkg }
 
 getCabalFlags :: Hkg [String]
 getCabalFlags = gets st_cabFlags
 
-setDepFlags :: String -> Hkg ()
-setDepFlags depFlags = modify $ \st -> st { st_depFlags = parseFlags depFlags }
+setCabalFlags :: String -> Hkg ()
+setCabalFlags cf = modify $ \st -> st { st_cabFlags = parseFlags cf }
 
 getDepFlags :: Hkg [String]
 getDepFlags = gets st_depFlags
 
-setPkgFlags :: String -> Hkg ()
-setPkgFlags pkgFlags = modify $ \st -> st { st_pkgFlags = parseFlags pkgFlags }
+setDepFlags :: String -> Hkg ()
+setDepFlags depFlags = modify $ \st -> st { st_depFlags = parseFlags depFlags }
 
 getPkgFlags :: Hkg [String]
 getPkgFlags = gets st_pkgFlags
 
-addPkg :: String -> Hkg ()
-addPkg p = modify $ \st -> st { st_pkgs = Set.insert p (st_pkgs st) }
+setPkgFlags :: String -> Hkg ()
+setPkgFlags pkgFlags = modify $ \st -> st { st_pkgFlags = parseFlags pkgFlags }
 
 getPkgs :: Hkg [String]
 getPkgs = gets $ Set.toList . st_pkgs
 
-setThreads :: Int -> Hkg ()
-setThreads n = modify $ \st -> st { st_threads = n }
+addPkg :: String -> Hkg ()
+addPkg p = modify $ \st -> st { st_pkgs = Set.insert p (st_pkgs st) }
 
 getThreads :: Hkg Int
 getThreads = gets st_threads
+
+setThreads :: Int -> Hkg ()
+setThreads n = modify $ \st -> st { st_threads = n }
+
+getRegex :: Hkg String
+getRegex = gets st_regex
+
+setRegex :: String -> Hkg ()
+setRegex s = modify $ \st -> st { st_regex = s }
+
 
 parseFlags :: String -> [String]
 parseFlags str =
