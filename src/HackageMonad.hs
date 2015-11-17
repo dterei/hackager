@@ -2,22 +2,37 @@
 -- | Monad for Hackage Test. Just a simple state passing monad with appropriate
 -- getter and setters.
 module HackageMonad (
+        -- state holder types
         PkgName, Hkg, HkgState, startState,
 
-        getTempPackageConf, getScratchDir, rmScratchDir, rmAllScratch,
-
+        -- configure build paths and tools
         setRunPath, getRunPath, getCabal, setCabal, getGhc, setGhc, getGhcPkg,
         setGhcPkg, getCabalFlags, setCabalFlags, getDepFlags, setDepFlags,
-        getPkgFlags, setPkgFlags, addPkg, getPkgs,
+        getPkgFlags, setPkgFlags,
 
+        -- setup and retrieve list of packages to test
+        addPkg, getPkgs,
+
+        -- build scratch / isolated environment
+        getTempPackageConf, getScratchDir, rmScratchDir, rmAllScratch,
+
+        -- control build parallelism
         setThreads, getThreads,
 
+        -- stats (what packages do we think we can and can't try to build?)
         addInstall, addInstalledPackage, addInstallablePackage,
-        addNotInstallablePackage, addFailPackage, getInstallablePackages,
+        addNotInstallablePackage, addFailPackage,
+        
+        -- list of packages we've determined we can attempt to build
+        getInstallablePackages,
+
+        -- build outcomes
         buildSucceeded, buildFailed, buildDepsFailed,
 
+        -- save results to disk
         dumpStats, dumpResults,
 
+        -- logging utils
         info, warn, die
     ) where
 

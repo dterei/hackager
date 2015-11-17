@@ -68,11 +68,28 @@ altern Buildable          628            0           0         0
 These results mean that 73 packages became unbuildable when the
 alternative layout rule is used.
 
+## File Output
+
+When looking at the files created by a single run of Hackager, the important
+one is `stats.summary`, which cotains the following fields:
+
+* ''Num packages'':           Number of packges we are testing.
+* ''Installed packages'':     Packages already installed, so skipping.
+* ''Installable packages'':   Packages we believe we can install (dependencies
+                              can be satistified).
+* ''Uninstallable packages'': Packages we don't know how to build (i.e., Cabal
+                              fails).
+* ''Failed packages'':        Packages Cabal claims can be built but we don't
+                              understand Cabal's output.
+* ''Total reinstallations'':  Total number of dependencies that need to be
+                              installed (and re-installed) to build requested
+                              packages.
+
 ## Caution
 
 Hackager can cause arbitrary code to run on your machine. For example:
- * TemplateHaskell is run at compile time and can execute arbitrary
-   code
+
+ * TemplateHaskell is run at compile time and can execute arbitrary code
  * Package configure scripts will be run
  * Custom Setup.hs programs will be run
 
