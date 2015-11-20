@@ -23,20 +23,22 @@ See 'hackager help <command>' for more information on a specific command
 
 ~~~~ {.sh}
 usage: hackager record -o NAME [-c CABAL] [-g GHC] [-p GHC-PKG] [-d DEP-FLAGS]
-                      [-f PKG-FLAGS] [-n THREADS] [PKGS...]
+                       [-f PKG-FLAGS] [-n THREADS] [-r SEARCH] [PKGS...]
 
     NAME         A name by which the results of this hackager run will
-                 be referred, e.g. \"ghc-7.6.1\"
-    CABAL        The path to the cabal program to use
-    GHC          The path to the ghc program to use
-    GHC-PKG      The path to the ghc-pkg program to use
-    DEP-FLAGS    The flags to use when compiling dependencies of a package
+                 be referred, e.g. \"ghc-7.6.1\".
+    CABAL        The path to the cabal program to use.
+    GHC          The path to the ghc program to use.
+    GHC-PKG      The path to the ghc-pkg program to use.
+    DEP-FLAGS    The flags to use when compiling dependencies of a package.
                  e.g. \"--ghc-option=-XFoo\"
-    PKG-FLAGS    The flags to use when compiling a package
+    PKG-FLAGS    The flags to use when compiling a package.
                  e.g. \"--ghc-option=-XBar\"
-    THREADS      Number of threads to use to build in parallel
+    THREADS      Number of threads to use to build in parallel.
+    SEARCH       A regular expression to use for selecting packages,
+                 when used, don't specify a package list.
     PKGS         A list of packages to build. If not specified all of
-                 hackage is built
+                 hackage is built.
 ~~~~
 
 ### Executing a run of Hackager
