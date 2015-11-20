@@ -32,6 +32,7 @@ Executable hackager
                    RecordOptions
                    Report
                    Utils
+                   Version
     HS-Source-Dirs: src
     Ghc-Options: -threaded -Wall
     Build-Depends: base        >= 2 && < 5,

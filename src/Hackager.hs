@@ -6,6 +6,7 @@ import System.Exit
 
 import Record
 import Report
+import Version
 
 -- | Hackage Test (IO)
 main :: IO ()
@@ -15,16 +16,13 @@ main = do
         ("record" : args') -> record args'
         ("report" : args') -> report args'
         ("help"   : args') -> help args'
-        ["--version"] -> version
+        ["version"]   -> putStrLn version
+        ["--version"] -> putStrLn version
         ["--help"   ] -> usageInfo ExitSuccess
         [           ] -> usageInfo (ExitFailure 1)
         x:_           -> putStrLn ("hackager: '" ++ x ++ "' is not a hackager"
                             ++ " command. See 'hackager --help'.")
                          >> exitWith (ExitFailure 1)
-
--- | Hackager version
-version :: IO ()
-version = putStrLn "hackager version 1.0.0"
 
 -- | The help command
 help :: [String] -> IO ()
